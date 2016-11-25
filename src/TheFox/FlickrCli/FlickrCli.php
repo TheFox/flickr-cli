@@ -1,11 +1,11 @@
 <?php
 
-namespace TheFox\FlickrUploader;
+namespace TheFox\FlickrCli;
 
-class FlickrUploader{
+class FlickrCli{
 	
-	const NAME = 'FlickrUploader';
-	const VERSION = '2.1.0-dev.1';
+	const NAME = 'FlickrCli';
+	const VERSION = '0.1.0-dev.1';
 	
 	const UPLOAD_PROGRESSBAR_ITEMS = 35;
 	const CLEAR_CHAR = ' ';

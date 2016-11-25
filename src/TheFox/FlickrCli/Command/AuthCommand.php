@@ -1,6 +1,6 @@
 <?php
 
-namespace TheFox\FlickrUploader\Command;
+namespace TheFox\FlickrCli\Command;
 
 use Exception;
 

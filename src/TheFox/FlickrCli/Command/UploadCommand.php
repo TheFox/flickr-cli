@@ -1,6 +1,6 @@
 <?php
 
-namespace TheFox\FlickrUploader\Command;
+namespace TheFox\FlickrCli\Command;
 
 use Exception;
 use SplFileInfo;
@@ -24,7 +24,7 @@ use Monolog\Handler\ErrorLogHandler;
 use Rych\ByteSize\ByteSize;
 use Carbon\Carbon;
 
-use TheFox\FlickrUploader\FlickrUploader;
+use TheFox\FlickrCli\FlickrCli;
 
 class UploadCommand extends Command{
 	
@@ -98,16 +98,16 @@ class UploadCommand extends Command{
 		$logHandlerStderr->setFormatter($logFormatter);
 		$this->log->pushHandler($logHandlerStderr);
 
-		$logHandlerFile = new StreamHandler($this->logDirPath.'/upload_'.$nowFormated.'.log', Logger::INFO);
+		$logHandlerFile = new StreamHandler($this->logDirPath.'/flickr_upload_'.$nowFormated.'.log', Logger::INFO);
 		$logHandlerFile->setFormatter($logFormatter);
 		$this->log->pushHandler($logHandlerFile);
 
-		$logFilesSuccessfulStream = new StreamHandler($this->logDirPath.'/upload_files_successful_'.$nowFormated.'.log', Logger::INFO);
+		$logFilesSuccessfulStream = new StreamHandler($this->logDirPath.'/flickr_upload_files_successful_'.$nowFormated.'.log', Logger::INFO);
 		$logFilesSuccessfulStream->setFormatter($logFormatter);
 		$this->logFilesSuccessful = new Logger('flickr_uploader');
 		$this->logFilesSuccessful->pushHandler($logFilesSuccessfulStream);
 
-		$logFilesFailedStream = new StreamHandler($this->logDirPath.'/upload_files_failed_'.$nowFormated.'.log', Logger::INFO);
+		$logFilesFailedStream = new StreamHandler($this->logDirPath.'/flickr_upload_files_failed_'.$nowFormated.'.log', Logger::INFO);
 		$logFilesFailedStream->setFormatter($logFormatter);
 		$this->logFilesFailed = new Logger('flickr_uploader');
 		$this->logFilesFailed->pushHandler($logFilesFailedStream);
@@ -171,8 +171,8 @@ class UploadCommand extends Command{
 				$percent = 100;
 			}
 			
-			$progressbarUploaded = round($percent / 100 * FlickrUploader::UPLOAD_PROGRESSBAR_ITEMS);
-			$progressbarRest = FlickrUploader::UPLOAD_PROGRESSBAR_ITEMS - $progressbarUploaded;
+			$progressbarUploaded = round($percent / 100 * FlickrCli::UPLOAD_PROGRESSBAR_ITEMS);
+			$progressbarRest = FlickrCli::UPLOAD_PROGRESSBAR_ITEMS - $progressbarUploaded;
 			
 			$uploadedDiffStr = '';
 			$timeCur = time();
@@ -283,7 +283,7 @@ class UploadCommand extends Command{
 		$filesFailed = array();
 		
 		$finderFilter = $filter = function(SplFileInfo $file){
-			if(in_array($file->getFilename(), FlickrUploader::FILES_INORE)){
+			if(in_array($file->getFilename(), FlickrCli::FILES_INORE)){
 				return false;
 			}
 			return true;
@@ -321,7 +321,7 @@ class UploadCommand extends Command{
 				
 				$totalFiles++;
 				
-				if(!in_array($fileExt, FlickrUploader::ACCEPTED_EXTENTIONS)){
+				if(!in_array(strtolower($fileExt), FlickrCli::ACCEPTED_EXTENTIONS)){
 					$fileErrors++;
 					$filesFailed[] = $fileRelativePath;
 					$this->log->error('[file] invalid extension: '.$fileRelativePath);

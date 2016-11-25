@@ -6,7 +6,7 @@ Upload and download [Flickr](https://www.flickr.com/) photos, photo sets, direct
 
 1. Clone from Github:
 	
-		git clone https://github.com/TheFox/flickr-uploader.git
+		git clone https://github.com/TheFox/flickr-cli.git
 
 2. Update dependencies:
 	
@@ -16,8 +16,8 @@ Upload and download [Flickr](https://www.flickr.com/) photos, photo sets, direct
 	
 		composer install
 
-3. Go to https://www.flickr.com/services/apps/create/apply/ to create a new API key.
-The first time you run `accesstoken.php` you'll be prompted to enter your new consumer key and secret.
+3. Go to <https://www.flickr.com/services/apps/create/apply/> to create a new API key.
+The first time you run `./application.php auth` you'll be prompted to enter your new consumer key and secret.
 
 ## Usage
 
