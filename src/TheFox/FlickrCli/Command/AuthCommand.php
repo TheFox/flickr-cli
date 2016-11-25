@@ -80,7 +80,7 @@ class AuthCommand extends Command{
 				if($accessToken && $accessTokenSecret){
 					$url = $flickrService->getAuthorizationUri(array(
 						'oauth_token' => $accessToken,
-						'perms' => 'write',
+						'perms' => 'delete',
 					));
 					
 					$output->writeln('');

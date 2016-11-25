@@ -1,6 +1,6 @@
 # FlickrCLI
 
-Upload and download [Flickr](https://www.flickr.com/) photos, photo sets, directories using the shell.
+A command-line interface to [Flickr](https://www.flickr.com/). Upload and download photos, photo sets, directories using the shell.
 
 ## Installation
 
@@ -25,9 +25,21 @@ First, get the access token:
 
 	./application.php auth
 
-Upload:
+### Upload
 
 	./application.php upload [-d DESCRIPTION] [-t TAG,...] [-s SET,...] DIRECTORY...
+
+### Download
+
+	./application.php download -d DIRECTORY [SET...]
+
+To download all photosets to directory `photosets`:
+
+	./application.php download -d photosets
+
+Or to download only the photoset *Holiday 2013*:
+
+	./application.php download -d photosets 'Holiday 2013'
 
 ## Flickr API documentation
 

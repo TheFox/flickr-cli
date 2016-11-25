@@ -1,9 +1,9 @@
 {
 	"name": "thefox/flickr-cli",
-	"description": "Upload to Flickr.",
+	"description": "Upload and download Flickr photos, photo sets, directories via shell.",
 	"license": "GPL-3.0",
 	"type": "project",
-	"keywords": [ "Flickr", "Upload", "Photo" ],
+	"keywords": [ "Flickr", "Upload", "Download", "Photo", "CLI" ],
 	"homepage": "https://fox21.at",
 	"authors": [
 		{

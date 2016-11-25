@@ -80,6 +80,9 @@ class UploadCommand extends Command{
 			return 1;
 		}
 		
+		if($input->hasOption('log') && $input->getOption('log')){
+			$this->logDirPath = $input->getOption('log');
+		}
 		if(!$filesystem->exists($this->logDirPath)){
 			$filesystem->mkdir($this->logDirPath);
 		}
@@ -87,7 +90,6 @@ class UploadCommand extends Command{
 		// 	$filesystem->mkdir($config['uploader']['uploaded_dir']);
 		// }
 		
-		$bytesize = new ByteSize();
 		$now = Carbon::now();
 		$nowFormated = $now->format('Ymd');
 		
@@ -329,6 +331,8 @@ class UploadCommand extends Command{
 					
 					continue;
 				}
+				
+				$bytesize = new ByteSize();
 				
 				if($dryrun){
 					$this->log->info("[file] dry upload '".$fileRelativePath."'  ".$bytesize->format($this->uploadFileSize));
