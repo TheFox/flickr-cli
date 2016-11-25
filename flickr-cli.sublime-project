@@ -1,0 +1,10 @@
+{
+	"folders":[
+		{
+			"path": ".",
+			"name": "FlickrCLI",
+			"folder_exclude_patterns": [ "vendor" ],
+			"file_exclude_patterns": [ ]
+		}
+	]
+}

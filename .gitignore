@@ -1,0 +1,8 @@
+*.lock
+*.yml
+composer.lock
+composer.phar
+log
+test*.jpg
+/uploaded/
+/vendor/
