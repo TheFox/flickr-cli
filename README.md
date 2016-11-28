@@ -1,6 +1,6 @@
 # FlickrCLI
 
-A command-line interface to [Flickr](https://www.flickr.com/). Upload and download photos, photo sets, directories using the shell.
+A command-line interface to [Flickr](https://www.flickr.com/). Upload and download photos, photo sets, directories via shell.
 
 ## Installation
 
