@@ -41,6 +41,18 @@ Or to download only the photoset *Holiday 2013*:
 
 	./application.php download -d photosets 'Holiday 2013'
 
+To download all photos into directories named by photo ID
+(and so which will not change when you rename albums or photos; perfect for a complete Flickr backup)
+you can use the `--id-dirs` option:
+
+	./application.php download -d flickr_backup --id-dirs
+
+This creates a stable directory structure of the form `destination_dir/hash/hash/photo-ID/`
+and saves the full original photo file along with a `metadata.yml` file containing all photo metadata.
+The hashes, which are the first two sets of two characters of the MD5 hash of the ID,
+are required in order to prevent a single directory from containing too many subdirectories
+(to avoid problems with some filesystems).
+
 ## Flickr API documentation
 
 <http://www.flickr.com/services/api/>
