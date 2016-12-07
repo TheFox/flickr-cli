@@ -25,22 +25,32 @@ use Carbon\Carbon;
 use TheFox\FlickrCli\FlickrCli;
 
 class DownloadCommand extends Command{
-	
+
 	public $exit = 0;
 	private $configPath;
 	private $logDirPath;
+
+	/** @var string The destination directory for downloaded files. No trailing slash. */
 	private $dstDirPath;
+
+	/** @var Logger General logger */
 	private $log;
+
+	/** @var Logger Log for information about failed downloads.  */
 	private $logFilesFailed;
-	
+
+	/** @var boolean Whether to download even if a local copy already exists. */
+	protected $forceDownload;
+
 	protected function configure(){
 		$this->setName('download');
 		$this->setDescription('Download files from Flickr.');
 		
 		$this->addOption('config', 'c', InputOption::VALUE_OPTIONAL, 'Path to config file. Default: config.yml');
 		$this->addOption('log', 'l', InputOption::VALUE_OPTIONAL, 'Path to log directory. Default: log');
-		$this->addOption('destination', 'd', InputOption::VALUE_OPTIONAL, 'Path to save files.');
+		$this->addOption('destination', 'd', InputOption::VALUE_OPTIONAL, 'Path to save files. Default: photosets');
 		$this->addOption('id-dirs', 'i', InputOption::VALUE_NONE, 'Save downloaded files into ID-based directories. Default is to group by Album titles instead.');
+		$this->addOption('force', 'f', InputOption::VALUE_NONE, 'Force Flickr CLI to download photos even if they already exist locally. Default is to skip existing downloads.');
 		// $this->addOption('tags', 't', InputOption::VALUE_OPTIONAL, 'Comma separated names. For example: --tags=tag1,tag2');
 		// $this->addOption('sets', 's', InputOption::VALUE_OPTIONAL, 'Comma separated names. For example: --sets=set1,set2');
 		// $this->addOption('recursive', 'r', InputOption::VALUE_NONE, 'Recurse into directories.');
@@ -52,20 +62,62 @@ class DownloadCommand extends Command{
 		$this->logDirPath = 'log';
 		$this->dstDirPath = 'photosets';
 	}
-	
+
+	/**
+	 * Executes the download command.
+	 * @param InputInterface  $input  An InputInterface instance
+	 * @param OutputInterface $output An OutputInterface instance
+	 * @return null|int null or 0 if everything went fine, or an error code
+	 */
 	protected function execute(InputInterface $input, OutputInterface $output){
+		$filesystem = new Filesystem();
+
+		// Set up logging.
+		if($input->hasOption('log') && $input->getOption('log')){
+			$this->logDirPath = $input->getOption('log');
+		}
+		if(!$filesystem->exists($this->logDirPath)){
+			$filesystem->mkdir($this->logDirPath);
+		}
+		$now = Carbon::now();
+		$nowFormated = $now->format('Ymd');
+		$logFormatter = new LineFormatter("[%datetime%] %level_name%: %message%\n");
+		$this->log = new Logger('flickr_downloader');
+		$logHandlerStderr = new StreamHandler('php://stderr', Logger::DEBUG);
+		$logHandlerStderr->setFormatter($logFormatter);
+		$this->log->pushHandler($logHandlerStderr);
+		$logHandlerFile = new StreamHandler($this->logDirPath.'/flickr_download_'.$nowFormated.'.log', Logger::INFO);
+		$logHandlerFile->setFormatter($logFormatter);
+		$this->log->pushHandler($logHandlerFile);
+		$logFilesFailedStream = new StreamHandler($this->logDirPath.'/flickr_download_files_failed_'.$nowFormated.'.log', Logger::INFO);
+		$logFilesFailedStream->setFormatter($logFormatter);
+		$this->logFilesFailed = new Logger('flickr_downloader');
+		$this->logFilesFailed->pushHandler($logFilesFailedStream);
+		$this->log->info('start');
+		$this->logFilesFailed->info('start');
+
+		// Destination directory. Default to 'photosets'.
+		$customDestDir = $input->getOption('destination');
+		if(!empty($customDestDir)){
+			$this->dstDirPath = rtrim($customDestDir, '/');
+		}
+		if(!$filesystem->exists($this->dstDirPath)){
+			$filesystem->mkdir($this->dstDirPath);
+		}
+
+		// Force download?
+		$this->forceDownload = $input->getOption('force');
+
+		// Load and check the configuration file.
 		if($input->hasOption('config') && $input->getOption('config')){
 			$this->configPath = $input->getOption('config');
 		}
-
-		$filesystem = new Filesystem();
 		if(!$filesystem->exists($this->configPath)){
-			$output->writeln('ERROR: config file not found: '.$this->configPath);
+			$this->log->critical('Config file not found: '.$this->configPath);
 			return 1;
 		}
-
+		$this->log->info('Config file: '.$this->configPath);
 		$config = Yaml::parse($this->configPath);
-
 		if(
 			!isset($config)
 			|| !isset($config['flickr'])
@@ -76,51 +128,12 @@ class DownloadCommand extends Command{
 			return 1;
 		}
 
-		if($input->hasOption('log') && $input->getOption('log')){
-			$this->logDirPath = $input->getOption('log');
-		}
-		if(!$filesystem->exists($this->logDirPath)){
-			$filesystem->mkdir($this->logDirPath);
-		}
-
-		// Destination directory. Default to 'photosets'.
-		$customDestDir = $input->getOption('destination');
-		if(!empty($customDestDir)){
-			$this->dstDirPath = $customDestDir;
-		}
-		if(!$filesystem->exists($this->dstDirPath)){
-			$filesystem->mkdir($this->dstDirPath);
-		}
-
-		$now = Carbon::now();
-		$nowFormated = $now->format('Ymd');
-
-		$logFormatter = new LineFormatter("[%datetime%] %level_name%: %message%\n");
-		$this->log = new Logger('flickr_downloader');
-
-		$logHandlerStderr = new StreamHandler('php://stderr', Logger::DEBUG);
-		$logHandlerStderr->setFormatter($logFormatter);
-		$this->log->pushHandler($logHandlerStderr);
-
-		$logHandlerFile = new StreamHandler($this->logDirPath.'/flickr_download_'.$nowFormated.'.log', Logger::INFO);
-		$logHandlerFile->setFormatter($logFormatter);
-		$this->log->pushHandler($logHandlerFile);
-
-		$logFilesFailedStream = new StreamHandler($this->logDirPath.'/flickr_download_files_failed_'.$nowFormated.'.log', Logger::INFO);
-		$logFilesFailedStream->setFormatter($logFormatter);
-		$this->logFilesFailed = new Logger('flickr_downloader');
-		$this->logFilesFailed->pushHandler($logFilesFailedStream);
-
-		$this->log->info('start');
-		$this->logFilesFailed->info('start');
-
-		$this->log->info('Config file: '.$this->configPath);
-
+		// Set up the Flickr API.
 		$metadata = new Metadata($config['flickr']['consumer_key'], $config['flickr']['consumer_secret']);
 		$metadata->setOauthAccess($config['flickr']['token'], $config['flickr']['token_secret']);
-
 		$apiFactory = new ApiFactory($metadata, new RezzzaGuzzleAdapter());
 
+		// Run the actual download.
 		if ($input->getOption('id-dirs')) {
 			// If downloaded files should be saved into download-dir/hash/hash/photo-id/ directories.
 			$this->log->info("Downloading to ID-based directories in: ".$this->dstDirPath);
@@ -130,7 +143,7 @@ class DownloadCommand extends Command{
 			$this->log->info("Downloading to Album-based directories in: ".$this->dstDirPath);
 			$this->downloadByAlbumTitle($apiFactory, $input, $filesystem);
 		}
-		return true;
+		return 0;
 	}
 
 	/**
@@ -246,7 +259,7 @@ class DownloadCommand extends Command{
 					$this->log->debug('[media] '.$page.'/'.$fileCount.' '.$photo['id']);
 					$downloaded = $this->fetchSinglePhoto($apiFactory, $photo, $dstDirFullPath, $filesystem);
 					if (isset($downloaded->filesize)) {
-						$totalDownloaded += $downloaded;
+						$totalDownloaded += $downloaded->filesize;
 					}
 					$fileCount++;
 				}
@@ -315,15 +328,15 @@ class DownloadCommand extends Command{
 		$filePath = rtrim($dstDirFullPath, '/').'/'.$fileName;
 		$filePathTmp = $dstDirFullPath.'/'.$id.'.'.$originalFormat.'.tmp';
 
-		if($filesystem->exists($filePath)){
+		if($filesystem->exists($filePath) && !$this->forceDownload){
 			$this->log->debug("File $id already downloaded to $filePath");
 			return $xmlPhoto->photo;
 		}
 
-		// $url = 'https://farm'.$farm.'.staticflickr.com/'.$server.'/'.$id.'_'.$originalSecret.'_o.'.$originalFormat;
-		$url = sprintf('https://c1.staticflickr.com/%s/%s/%s_%s_o.png',
-			$farm, $server, $id, $originalSecret
-		);
+		// URL format for the original image. See https://www.flickr.com/services/api/misc.urls.html
+		// https://farm{farm-id}.staticflickr.com/{server-id}/{id}_{o-secret}_o.(jpg|gif|png)
+		$urlFormat = 'https://farm%s.staticflickr.com/%s/%s_%s_o.%s';
+		$url = sprintf($urlFormat, $farm, $server, $id, $originalSecret, $originalFormat);
 
 		if($media == 'video'){
 			// $url = 'http://www.flickr.com/photos/'.$ownerPathalias.'/'.$id.'/play/orig/'.$originalSecret.'/';
@@ -367,7 +380,7 @@ class DownloadCommand extends Command{
 
 			$this->log->error('video not supported yet');
 			$this->logFilesFailed->error($id.': video not supported yet');
-			return;
+			return false;
 		}
 
 		$client = new GuzzleHttpClient($url);
@@ -441,13 +454,19 @@ class DownloadCommand extends Command{
 				$downloadedDiffStr = $bytesize->format($downloadedDiff).'/s';
 			}
 
-			printf("[file] %6.2f%% [%s%s] %s %10s\x1b[0K\r",
-				$percent,
-				str_repeat('#', $progressbarDownloaded),
-				str_repeat(' ', $progressbarRest),
-				number_format($downloaded),
-				$downloadedDiffStr
-			);
+			if ($size) {
+				// If we know the stream size, show a progress bar.
+				printf("[file] %6.2f%% [%s%s] %s %10s\x1b[0K\r",
+					$percent,
+					str_repeat('#', $progressbarDownloaded),
+					str_repeat(' ', $progressbarRest),
+					number_format($downloaded),
+					$downloadedDiffStr
+				);
+			} else {
+				// Otherwise, just show the amount downloaded and speed.
+				printf("[file] %s %10s\x1b[0K\r", number_format($downloaded), $downloadedDiffStr );
+			}
 		}
 		fclose($fh);
 		print "\n";
@@ -464,14 +483,10 @@ class DownloadCommand extends Command{
 			$this->logFilesFailed->error($id.'.'.$originalFormat);
 		}
 		else{
-			while($filesystem->exists($filePath)){
-				$filePath = fileNameCountup($filePath);
-			}
-			if($filePath){
-				$filesystem->rename($filePathTmp, $filePath);
-				$xmlPhoto->filesize = $size;
-				return $xmlPhoto;
-			}
+			// Rename to its final destination, and return the photo metadata.
+			$filesystem->rename($filePathTmp, $filePath, $this->forceDownload);
+			$xmlPhoto->photo->filesize = $size;
+			return $xmlPhoto->photo;
 		}
 	}
 
@@ -528,9 +543,14 @@ class DownloadCommand extends Command{
 		if (!$filesystem->exists($destinationPath)) {
 			$filesystem->mkdir($destinationPath);
 		}
+		$this->log->debug("Downloading {$photo['id']} to $destinationPath");
 
 		// Save the actual file.
 		$info = $this->fetchSinglePhoto($apiFactory, $photo, $destinationPath, $filesystem, $photo['id']);
+		if ($info === false) {
+			$this->log->error("Unable to get metadata about photo: {$photo['id']}");
+			return;
+		}
 
 		// Also save metadata to a separate Yaml file.
 		$metadata = [
@@ -549,7 +569,7 @@ class DownloadCommand extends Command{
 			'dates' => [
 				'posted' => (string)$info->dates['posted'],
 				'taken' => (string)$info->dates['taken'],
-				'takengranularity' => (string)$info->dates['takengranularity'],
+				'takengranularity' => (int)$info->dates['takengranularity'],
 				'takenunknown' => (string)$info->dates['takenunknown'],
 				'lastupdate' => (string)$info->dates['lastupdate'],
 				'uploaded' => (string)$info['dateuploaded'],
@@ -565,7 +585,7 @@ class DownloadCommand extends Command{
 					'id' => (string)$tag['id'],
 					'slug' => (string)$tag,
 					'title' => (string)$tag['raw'],
-					'machine' => (boolean)$tag['machine_tag'],
+					'machine' => $tag['machine_tag'] !== '0',
 				];
 			}
 		}
