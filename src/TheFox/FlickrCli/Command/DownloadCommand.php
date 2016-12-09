@@ -303,7 +303,10 @@ class DownloadCommand extends Command{
 			}
 		}
 		catch(Exception $e){
-			$this->log->error('['.$media.'] '.$id.', farm '.$farm.', server '.$server.' GETINFO FAILED: '.$e->getMessage());
+			$this->log->error(sprintf('[%s] %s, farm %s, server %s, %s GETINFO FAILED: %s',
+				$media, $id, $farm, $server, $fileName, $e->getMessage()
+			));
+			
 			$this->logFilesFailed->error($id.'.'.$originalFormat);
 
 			return false;
@@ -392,7 +395,9 @@ class DownloadCommand extends Command{
 			$stream = $streamRequestFactory->fromRequest($request);
 		}
 		catch(Exception $e){
-			$this->log->error('['.$media.'] '.$id.', farm '.$farm.', server '.$server.', '.$fileName.' FAILED: '.$e->getMessage());
+			$this->log->error(sprintf('[%s] %s, farm %s, server %s, %s FAILED: %s',
+				$media, $id, $farm, $server, $fileName, $e->getMessage()
+			));
 			$this->logFilesFailed->error($id.'.'.$originalFormat);
 
 			return false;
@@ -406,8 +411,8 @@ class DownloadCommand extends Command{
 			$sizeStr = $bytesize->format($size);
 		}
 
-		$this->log->info(sprintf("[%s] %s/%s %s, farm %s, server %s, %s, '%s', %s",
-			$media, null, null, $id, $farm, $server, $fileName, $description, $sizeStr
+		$this->log->info(sprintf("[%s] %s, farm %s, server %s, %s, '%s', %s",
+			$media, $id, $farm, $server, $fileName, $description, $sizeStr
 		));
 
 		$timePrev = time();
@@ -543,8 +548,7 @@ class DownloadCommand extends Command{
 		if (!$filesystem->exists($destinationPath)) {
 			$filesystem->mkdir($destinationPath);
 		}
-		$this->log->debug("Downloading {$photo['id']} to $destinationPath");
-
+		
 		// Save the actual file.
 		$info = $this->fetchSinglePhoto($apiFactory, $photo, $destinationPath, $filesystem, $photo['id']);
 		if ($info === false) {
