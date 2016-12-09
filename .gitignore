@@ -1,5 +1,5 @@
 *.lock
-*.yml
+config.yml
 composer.lock
 composer.phar
 log
