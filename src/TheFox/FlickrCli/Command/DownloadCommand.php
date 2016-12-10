@@ -548,7 +548,7 @@ class DownloadCommand extends Command{
 		if (!$filesystem->exists($destinationPath)) {
 			$filesystem->mkdir($destinationPath);
 		}
-		
+
 		// Save the actual file.
 		$info = $this->fetchSinglePhoto($apiFactory, $photo, $destinationPath, $filesystem, $photo['id']);
 		if ($info === false) {
@@ -565,6 +565,12 @@ class DownloadCommand extends Command{
 			'rotation' => (string)$info['rotation'],
 			'media' => (string)$info['media'],
 			'format' => (string)$info['originalformat'],
+			'owner' => [
+				'nsid' => (string)$info->owner['nsid'],
+				'username' => (string)$info->owner['username'],
+				'realname' => (string)$info->owner['realname'],
+				'path_alias' => (string)$info->owner['path_alias'],
+			],
 			'visibility' => [
 				'ispublic' => (boolean)$info->visibility['ispublic'],
 				'isfriend' => (boolean)$info->visibility['isfriend'],
@@ -579,6 +585,8 @@ class DownloadCommand extends Command{
 				'uploaded' => (string)$info['dateuploaded'],
 			],
 			'tags' => [],
+			'sets' => [],
+			'pools' => [],
 		];
 		if (isset($info->photo->description->_content)) {
 			$metadata['description'] = (string)$info->photo->description->_content;
@@ -598,6 +606,20 @@ class DownloadCommand extends Command{
 				'latitude' => (float)$info->location['latitude'],
 				'longitude' => (float)$info->location['longitude'],
 				'accuracy' => (integer)$info->location['accuracy'],
+			];
+		}
+		$contexts = $apiFactory->call('flickr.photos.getAllContexts', [ 'photo_id' => $info['id'] ]);
+		foreach ($contexts->set as $set) {
+			$metadata['sets'][] = [
+				'id' => (string)$set['id'],
+				'title' => (string)$set['title'],
+			];
+		}
+		foreach ($contexts->pool as $pool) {
+			$metadata['pools'][] = [
+				'id' => (string)$pool['id'],
+				'title' => (string)$pool['title'],
+				'url' => (string)$pool['url'],
 			];
 		}
 		file_put_contents("$destinationPath/metadata.yml", Yaml::dump($metadata));
