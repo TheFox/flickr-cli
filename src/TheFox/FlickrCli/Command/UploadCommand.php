@@ -52,6 +52,7 @@ class UploadCommand extends Command{
 		$this->addArgument('directory', InputArgument::IS_ARRAY, 'Path to directories.');
 
 		$this->configPath = 'config.yml';
+		$this->configRealPath = 'config.yml';
 		$this->logDirPath = 'log';
 	}
 	
@@ -59,24 +60,11 @@ class UploadCommand extends Command{
 		if($input->hasOption('config') && $input->getOption('config')){
 			$this->configPath = $input->getOption('config');
 		}
+		$this->configRealPath = realpath($this->configPath);
 		
 		$filesystem = new Filesystem();
 		if(!$filesystem->exists($this->configPath)){
 			$output->writeln('ERROR: config file not found: '.$this->configPath);
-			return 1;
-		}
-		
-		$config = Yaml::parse($this->configPath);
-		
-		if(
-			!isset($config)
-			|| !isset($config['flickr'])
-			|| !isset($config['flickr']['consumer_key'])
-			|| !isset($config['flickr']['consumer_secret'])
-			// || !isset($config['uploader']['move'])
-			// || !isset($config['uploader']['uploaded_dir'])
-		){
-			$this->log->critical('[main] config invalid');
 			return 1;
 		}
 		
@@ -86,9 +74,6 @@ class UploadCommand extends Command{
 		if(!$filesystem->exists($this->logDirPath)){
 			$filesystem->mkdir($this->logDirPath);
 		}
-		// if($config['uploader']['move'] && !$filesystem->exists($config['uploader']['uploaded_dir'])){
-		// 	$filesystem->mkdir($config['uploader']['uploaded_dir']);
-		// }
 		
 		$now = Carbon::now();
 		$nowFormated = $now->format('Ymd');
@@ -113,6 +98,20 @@ class UploadCommand extends Command{
 		$logFilesFailedStream->setFormatter($logFormatter);
 		$this->logFilesFailed = new Logger('flickr_uploader');
 		$this->logFilesFailed->pushHandler($logFilesFailedStream);
+		
+		$config = Yaml::parse($this->configPath);
+		
+		if(
+			!isset($config)
+			|| !isset($config['flickr'])
+			|| !isset($config['flickr']['consumer_key'])
+			|| !isset($config['flickr']['consumer_secret'])
+			|| !isset($config['upload']['move_on_success'])
+			|| !isset($config['upload']['uploaded_dir'])
+		){
+			$this->log->critical('[main] config invalid');
+			return 1;
+		}
 		
 		$this->log->info('start');
 		$this->logFilesSuccessful->info('start');
@@ -254,30 +253,21 @@ class UploadCommand extends Command{
 			}
 		}
 		
-		// var_export($directory); print "\n";
-		// var_export($photosetNames); print "\n";
-		// var_export($photosetsNew); print "\n";
-		
-		// $configUploaderUploadedDir = '';
-		// if($config['uploader']['move']){
+		$configUploadedBaseDir = '';
+		if($config['upload']['move_on_success']){
+			$configPathDirname = realpath(dirname($this->configRealPath));
+			$configUploadedBaseDir = $configPathDirname.'/'.$config['upload']['uploaded_dir'];
 			
-		// 	$argDir = 'test1';
-		// 	$tmp = $argDir;
+			if(!$filesystem->exists($configUploadedBaseDir)){
+				$config['upload']['move_on_success'] = $filesystem->mkdir($configUploadedBaseDir);
+				$this->log->info('[main] create dir: '.$configUploadedBaseDir.', '.($config['upload']['move_on_success'] ? 'OK' : 'FAILED'));
+			}
 			
-		// 	if(substr($tmp, 0, 1) != '/'){
-		// 		$tmp = getcwd().'/'.$argDir;
-		// 	}
-		// 	$tmp = str_replace('/', ' ', $tmp);
-		// 	$tmp = trim($tmp);
-		// 	$tmp = str_replace(' ', '.', $tmp);
-			
-		// 	# TODO: make $configUploaderUploadedDir absolute!!!
-		// 	$configUploaderUploadedDir = __DIR__.'/'.$config['uploader']['uploaded_dir'].'/'.$tmp;
-		// 	if(!file_exists($configUploaderUploadedDir)){
-		// 		$config['uploader']['move'] = mkdir($configUploaderUploadedDir);
-		// 		print('[main] create dir: '.$configUploaderUploadedDir.', '. ($config['uploader']['move'] ? 'OK' : 'FAILED') ."\n");
-		// 	}
-		// }
+			$this->log->info('[config] move on success: '.($config['upload']['move_on_success'] ? 'Y' : 'N'));
+			if($config['upload']['move_on_success']){
+				$this->log->info('[config] move after upload path: '.$configUploadedBaseDir);
+			}
+		}
 		
 		$totalFiles = 0;
 		$totalFilesUploaded = 0;
@@ -303,7 +293,12 @@ class UploadCommand extends Command{
 			
 			$srcDir = new SplFileInfo($argDir);
 			
-			$this->log->info('[dir] upload dir: '.$argDir.' '.$srcDir->getBasename());
+			$uploadBaseDirPath = '';
+			if($configUploadedBaseDir){
+				$uploadBaseDirPath = $configUploadedBaseDir.'/'.str_replace('/', '_', $argDir);
+			}
+			
+			$this->log->info('[dir] upload dir: '.$argDir.' '.$uploadBaseDirPath);
 			
 			foreach($finder->in($argDir) as $file){
 				pcntl_signal_dispatch();
@@ -314,20 +309,32 @@ class UploadCommand extends Command{
 				$fileName = $file->getFilename();
 				$fileExt = $file->getExtension();
 				$filePath = $file->getRealPath();
-				$fileRelativePath = $file->getRelativePathname();
-					
+				$fileRelativePath = new SplFileInfo($file->getRelativePathname());
+				$fileRelativePathStr = (string)$fileRelativePath;
+				$dirRelativePath = $fileRelativePath->getPath();
+				
 				$this->uploadFileSize = filesize($filePath);
 				$this->uploadFileSizeLen = strlen(number_format($this->uploadFileSize));
 				$uploaded = 0;
 				$timePrev = time();
 				
+				$uploadDirPath = '';
+				if($uploadBaseDirPath){
+					$uploadDirPath = $uploadBaseDirPath.'/'.$dirRelativePath;
+					
+					if(!$filesystem->exists($uploadDirPath)){
+						$this->log->info("[dir] create '".$uploadDirPath."'");
+						$filesystem->mkdir($uploadDirPath);
+					}
+				}
+				
 				$totalFiles++;
 				
 				if(!in_array(strtolower($fileExt), FlickrCli::ACCEPTED_EXTENTIONS)){
 					$fileErrors++;
-					$filesFailed[] = $fileRelativePath;
-					$this->log->error('[file] invalid extension: '.$fileRelativePath);
-					$this->logFilesFailed->error($fileRelativePath);
+					$filesFailed[] = $fileRelativePathStr;
+					$this->log->error('[file] invalid extension: '.$fileRelativePathStr);
+					$this->logFilesFailed->error($fileRelativePathStr);
 					
 					continue;
 				}
@@ -335,11 +342,11 @@ class UploadCommand extends Command{
 				$bytesize = new ByteSize();
 				
 				if($dryrun){
-					$this->log->info("[file] dry upload '".$fileRelativePath."'  ".$bytesize->format($this->uploadFileSize));
+					$this->log->info("[file] dry upload '".$fileRelativePathStr."' '".$dirRelativePath."' ".$bytesize->format($this->uploadFileSize));
 					continue;
 				}
 				
-				$this->log->info("[file] upload '".$fileRelativePath."'  ".$bytesize->format($this->uploadFileSize));
+				$this->log->info("[file] upload '".$fileRelativePathStr."'  ".$bytesize->format($this->uploadFileSize));
 				$xml = null;
 				try{
 					$xml = $apiFactoryVerbose->upload($filePath, $fileName, $description, $tags);
@@ -366,19 +373,19 @@ class UploadCommand extends Command{
 					$logLine = 'OK';
 					$totalFilesUploaded++;
 					
-					$this->logFilesSuccessful->info($fileRelativePath);
+					$this->logFilesSuccessful->info($fileRelativePathStr);
 					
-					// if($config['uploader']['move'] && $configUploaderUploadedDir){
-					// 	$this->log->info('[file] move to uploaded dir');
-					// 	rename($filePath, $configUploaderUploadedDir.'/'.$file);
-					// }
+					if($config['upload']['move_on_success'] && $uploadBaseDirPath){
+						$this->log->info('[file] move to uploaded dir: '.$uploadDirPath);
+						$filesystem->rename($filePath, $uploadDirPath.'/'.$fileName);
+					}
 				}
 				else{
 					$logLine = 'FAILED';
 					$fileErrors++;
-					$filesFailed[] = $fileRelativePath;
+					$filesFailed[] = $fileRelativePathStr;
 					
-					$this->logFilesFailed->error($fileRelativePath);
+					$this->logFilesFailed->error($fileRelativePathStr);
 				}
 				$this->log->info('[file] status: '.$logLine.' - ID '.$photoId);
 				

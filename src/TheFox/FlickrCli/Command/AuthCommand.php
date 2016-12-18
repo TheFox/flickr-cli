@@ -54,10 +54,10 @@ class AuthCommand extends Command{
 					'consumer_key' => $io->ask('Consumer key:'),
 					'consumer_secret' => $io->ask('Consumer secret:'),
 				),
-				// 'uploader' => array(
-				// 	'move' => true,
-				// 	'uploaded_dir' => 'uploaded',
-				// ),
+				'upload' => array(
+					'move_on_success' => true,
+					'uploaded_dir' => 'uploaded',
+				),
 			);
 			
 			$filesystem->touch($this->configPath);

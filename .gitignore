@@ -4,5 +4,6 @@ composer.lock
 composer.phar
 log
 test*.jpg
+test.yml
 /uploaded/
 /vendor/
