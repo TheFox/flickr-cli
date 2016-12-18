@@ -29,8 +29,6 @@ class ListCommand extends Command{
 	 */
 	private $configPath;
 	
-	// private $log;
-	
 	protected function configure(){
 		$this->setName('list');
 		$this->setDescription('List Photosets.');
@@ -41,9 +39,6 @@ class ListCommand extends Command{
 	}
 	
 	protected function execute(InputInterface $input, OutputInterface $output){
-		// $logFormatter = new LineFormatter("[%datetime%] %level_name%: %message%\n");
-		// $this->log = new Logger('flickr_list');
-		
 		$this->signalHandlerSetup();
 		
 		// Load and check the configuration file.
@@ -52,10 +47,9 @@ class ListCommand extends Command{
 		}
 		$filesystem = new Filesystem();
 		if(!$filesystem->exists($this->configPath)){
-			// $this->log->critical('Config file not found: '.$this->configPath);
+			print 'ERROR: config file not found: '.$this->configPath."\n";
 			return 1;
 		}
-		// $this->log->info('Config file: '.$this->configPath);
 		$config = Yaml::parse($this->configPath);
 		if(
 			!isset($config)
@@ -63,7 +57,7 @@ class ListCommand extends Command{
 			|| !isset($config['flickr']['consumer_key'])
 			|| !isset($config['flickr']['consumer_secret'])
 		){
-			// $this->log->critical('[main] config invalid');
+			print 'ERROR: config invalid'."\n";
 			return 1;
 		}
 		
@@ -97,22 +91,12 @@ class ListCommand extends Command{
 	
 	private function signalHandlerSetup(){
 		if(function_exists('pcntl_signal')){
-			// $this->log->info('Setup Signal Handler');
-			
 			declare(ticks = 1);
 			
-			$setup = pcntl_signal(SIGTERM, array($this, 'signalHandler'));
-			// $this->log->debug('Setup Signal Handler, SIGTERM: '.($setup ? 'OK' : 'FAILED'));
-			
-			$setup = pcntl_signal(SIGINT, array($this, 'signalHandler'));
-			// $this->log->debug('Setup Signal Handler, SIGINT: '.($setup ? 'OK' : 'FAILED'));
-			
-			$setup = pcntl_signal(SIGHUP, array($this, 'signalHandler'));
-			// $this->log->debug('Setup Signal Handler, SIGHUP: '.($setup ? 'OK' : 'FAILED'));
+			pcntl_signal(SIGTERM, array($this, 'signalHandler'));
+			pcntl_signal(SIGINT, array($this, 'signalHandler'));
+			pcntl_signal(SIGHUP, array($this, 'signalHandler'));
 		}
-		// else{
-		// 	$this->log->warning('pcntl_signal() function not found for Signal Handler Setup');
-		// }
 	}
 	
 	private function signalHandler($signal){
@@ -120,29 +104,20 @@ class ListCommand extends Command{
 		
 		switch($signal){
 			case SIGTERM:
-				// $this->log->notice('signal: SIGTERM');
 				break;
 			case SIGINT:
 				print PHP_EOL;
-				// $this->log->notice('signal: SIGINT');
 				break;
 			case SIGHUP:
-				// $this->log->notice('signal: SIGHUP');
 				break;
 			case SIGQUIT:
-				// $this->log->notice('signal: SIGQUIT');
 				break;
 			case SIGKILL:
-				// $this->log->notice('signal: SIGKILL');
 				break;
 			case SIGUSR1:
-				// $this->log->notice('signal: SIGUSR1');
 				break;
 			default:
-				// $this->log->notice('signal: N/A');
 		}
-		
-		// $this->log->notice('main abort ['.$this->exit.']');
 		
 		if($this->exit >= 2){
 			exit(1);
