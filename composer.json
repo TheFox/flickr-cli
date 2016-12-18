@@ -13,7 +13,7 @@
 		}
 	],
 	"require": {
-		"php": "~5.4 || ~7.0",
+		"php": "~5.6 || ~7.0",
 		"rezzza/flickr": "~1.1",
 		"symfony/yaml": "~2.3",
 		"symfony/console": "~3.1",
