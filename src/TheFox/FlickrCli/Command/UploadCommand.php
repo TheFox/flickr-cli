@@ -281,9 +281,8 @@ class UploadCommand extends Command{
 			return true;
 		};
 		$finder = new Finder();
-		$finder
-			->files()
-			->filter($filter);
+		$finder->files()
+				->filter($filter);
 		if(!$recursive){
 			$finder->depth(0);
 		}

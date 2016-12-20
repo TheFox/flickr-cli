@@ -53,7 +53,7 @@ class Flickr extends AbstractService{
 			throw new TokenResponseException('Unable to parse response.');
 		}
 		elseif(isset($data['error'])){
-			throw new TokenResponseException('Error in retrieving token: "' . $data['error'] . '"');
+			throw new TokenResponseException('Error in retrieving token: "'.$data['error'].'"');
 		}
 		
 		$token = new StdOAuth1Token();
@@ -67,4 +67,5 @@ class Flickr extends AbstractService{
 		
 		return $token;
 	}
+
 }
