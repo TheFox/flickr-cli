@@ -20,7 +20,7 @@ use Rezzza\Flickr\Http\GuzzleAdapter as RezzzaGuzzleAdapter;
 use Monolog\Logger;
 use Monolog\Formatter\LineFormatter;
 
-class ListCommand extends Command{
+class AlbumsCommand extends Command{
 	
 	public $exit = 0;
 	
@@ -30,7 +30,7 @@ class ListCommand extends Command{
 	private $configPath;
 	
 	protected function configure(){
-		$this->setName('list');
+		$this->setName('albums');
 		$this->setDescription('List Photosets.');
 		
 		$this->addOption('config', 'c', InputOption::VALUE_OPTIONAL, 'Path to config file. Default: config.yml');
