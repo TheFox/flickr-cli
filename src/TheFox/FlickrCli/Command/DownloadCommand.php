@@ -136,11 +136,11 @@ class DownloadCommand extends Command{
 		// Run the actual download.
 		if ($input->getOption('id-dirs')) {
 			// If downloaded files should be saved into download-dir/hash/hash/photo-id/ directories.
-			$this->log->info("Downloading to ID-based directories in: ".$this->dstDirPath);
+			$this->log->info('Downloading to ID-based directories in: '.$this->dstDirPath);
 			$this->downloadById($apiFactory, $filesystem);
 		} else {
 			// If download directories should match Album titles.
-			$this->log->info("Downloading to Album-based directories in: ".$this->dstDirPath);
+			$this->log->info('Downloading to Album-based directories in: '.$this->dstDirPath);
 			$this->downloadByAlbumTitle($apiFactory, $input, $filesystem);
 		}
 		return 0;
@@ -324,9 +324,9 @@ class DownloadCommand extends Command{
 
 		// Set the filename.
 		if (!empty($basename)) {
-			$fileName = $basename . '.' . $originalFormat;
+			$fileName = $basename.'.'.$originalFormat;
 		} else {
-			$fileName = ($title ? $title : $id) . '.' . $originalFormat;
+			$fileName = ($title ? $title : $id).'.'.$originalFormat;
 		}
 		$filePath = rtrim($dstDirFullPath, '/').'/'.$fileName;
 		$filePathTmp = $dstDirFullPath.'/'.$id.'.'.$originalFormat.'.tmp';
@@ -522,7 +522,7 @@ class DownloadCommand extends Command{
 				// Loop through all pages in this set.
 				$setPhotosPage = 1;
 				do {
-					$params = ['photoset_id'=>$set['id'], 'page' => $setPhotosPage];
+					$params = ['photoset_id' => $set['id'], 'page' => $setPhotosPage];
 					$setPhotos = $apiFactory->call('flickr.photosets.getPhotos', $params);
 					$this->log->info("[Set $set->title] {$setPhotos->photoset['total']} photos (p$setPhotosPage/{$setPhotos->photoset['pages']})");
 					foreach ($setPhotos->photoset->photo as $photo) {
