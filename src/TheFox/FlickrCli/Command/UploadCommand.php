@@ -88,13 +88,15 @@ class UploadCommand extends Command{
 		$logHandlerFile = new StreamHandler($this->logDirPath.'/flickr_upload_'.$nowFormated.'.log', Logger::INFO);
 		$logHandlerFile->setFormatter($logFormatter);
 		$this->log->pushHandler($logHandlerFile);
-
-		$logFilesSuccessfulStream = new StreamHandler($this->logDirPath.'/flickr_upload_files_successful_'.$nowFormated.'.log', Logger::INFO);
+		
+		$logFilesSuccessfulFilePath = $this->logDirPath.'/flickr_upload_files_successful_'.$nowFormated.'.log';
+		$logFilesSuccessfulStream = new StreamHandler($logFilesSuccessfulFilePath, Logger::INFO);
 		$logFilesSuccessfulStream->setFormatter($logFormatter);
 		$this->logFilesSuccessful = new Logger('flickr_uploader');
 		$this->logFilesSuccessful->pushHandler($logFilesSuccessfulStream);
-
-		$logFilesFailedStream = new StreamHandler($this->logDirPath.'/flickr_upload_files_failed_'.$nowFormated.'.log', Logger::INFO);
+		
+		$logFilesFailedStreamFilePath = $this->logDirPath.'/flickr_upload_files_failed_'.$nowFormated.'.log';
+		$logFilesFailedStream = new StreamHandler($logFilesFailedStreamFilePath, Logger::INFO);
 		$logFilesFailedStream->setFormatter($logFormatter);
 		$this->logFilesFailed = new Logger('flickr_uploader');
 		$this->logFilesFailed->pushHandler($logFilesFailedStream);
@@ -260,7 +262,9 @@ class UploadCommand extends Command{
 			
 			if(!$filesystem->exists($configUploadedBaseDir)){
 				$config['upload']['move_on_success'] = $filesystem->mkdir($configUploadedBaseDir);
-				$this->log->info('[main] create dir: '.$configUploadedBaseDir.', '.($config['upload']['move_on_success'] ? 'OK' : 'FAILED'));
+				$moveStatus = $config['upload']['move_on_success'] ? 'OK' : 'FAILED';
+				$this->log->info(sprintf('[main] create dir: %s, %s',
+					$configUploadedBaseDir, $moveStatus));
 			}
 			
 			$this->log->info('[config] move on success: '.($config['upload']['move_on_success'] ? 'Y' : 'N'));
@@ -281,9 +285,7 @@ class UploadCommand extends Command{
 			return true;
 		};
 		$finder = new Finder();
-		$finder
-			->files()
-			->filter($filter);
+		$finder->files()->filter($filter);
 		if(!$recursive){
 			$finder->depth(0);
 		}
@@ -342,7 +344,8 @@ class UploadCommand extends Command{
 				$bytesize = new ByteSize();
 				
 				if($dryrun){
-					$this->log->info("[file] dry upload '".$fileRelativePathStr."' '".$dirRelativePath."' ".$bytesize->format($this->uploadFileSize));
+					$this->log->info(sprintf("[file] dry upload '%s' '%s' %s",
+						$fileRelativePathStr, $dirRelativePath, $bytesize->format($this->uploadFileSize)));
 					continue;
 				}
 				

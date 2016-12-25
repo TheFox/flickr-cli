@@ -4,7 +4,7 @@
 	"license": "GPL-3.0",
 	"type": "project",
 	"keywords": [ "Flickr", "Upload", "Download", "Photo", "CLI" ],
-	"homepage": "https://fox21.at",
+	"homepage": "https://github.com/TheFox/flickr-cli",
 	"authors": [
 		{
 			"name": "Christian Mayer",
@@ -26,7 +26,7 @@
 		"nesbot/carbon": "~1.21"
 	},
 	"require-dev": {
-		"doctrine/common": "~2.4",
+		"doctrine/common": "~2.7",
 		"thefox/phpcsrs": "~1.6"
 	},
 	"autoload": {

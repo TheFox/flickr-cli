@@ -100,8 +100,9 @@ class DeleteCommand extends Command{
 		$logHandlerFile = new StreamHandler($this->logDirPath.'/flickr_delete_'.$nowFormated.'.log', Logger::INFO);
 		$logHandlerFile->setFormatter($logFormatter);
 		$this->log->pushHandler($logHandlerFile);
-
-		$logFilesFailedStream = new StreamHandler($this->logDirPath.'/flickr_delete_files_failed_'.$nowFormated.'.log', Logger::INFO);
+		
+		$logFilesFailedStreamFilePath = $this->logDirPath.'/flickr_delete_files_failed_'.$nowFormated.'.log';
+		$logFilesFailedStream = new StreamHandler($logFilesFailedStreamFilePath, Logger::INFO);
 		$logFilesFailedStream->setFormatter($logFormatter);
 		$this->logFilesFailed = new Logger('flickr_deleter');
 		$this->logFilesFailed->pushHandler($logFilesFailedStream);
@@ -139,9 +140,14 @@ class DeleteCommand extends Command{
 					}
 					
 					if($page > 1){
-						$xmlPhotoList = $apiFactory->call('flickr.photosets.getPhotos', array('photoset_id' => $photosetId, 'page' => $page));
+						$xmlPhotoListOptions = array(
+							'photoset_id' => $photosetId,
+							'page' => $page,
+						);
+						$xmlPhotoList = $apiFactory->call('flickr.photosets.getPhotos', $xmlPhotoListOptions);
 						
-						var_export($xmlPhotoList); print "\n\n";
+						var_export($xmlPhotoList);
+						print "\n\n";
 					}
 					
 					foreach($xmlPhotoList->photoset->photo as $n => $photo){

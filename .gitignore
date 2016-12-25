@@ -1,6 +1,4 @@
-*.lock
 config.yml
-composer.lock
 composer.phar
 log
 test*.jpg

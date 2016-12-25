@@ -14,8 +14,9 @@ use OAuth\Common\Storage\TokenStorageInterface;
 use OAuth\OAuth1\Service\AbstractService;
 
 class Flickr extends AbstractService{
-
-	public function __construct(CredentialsInterface $credentials, ClientInterface $httpClient, TokenStorageInterface $storage, SignatureInterface $signature, UriInterface $baseApiUri = null){
+	
+	public function __construct(CredentialsInterface $credentials, ClientInterface $httpClient,
+		TokenStorageInterface $storage, SignatureInterface $signature, UriInterface $baseApiUri = null){
 		parent::__construct($credentials, $httpClient, $storage, $signature, $baseApiUri);
 		if($baseApiUri === null){
 			$this->baseApiUri = new Uri('https://api.flickr.com/services/rest/?');
@@ -53,7 +54,7 @@ class Flickr extends AbstractService{
 			throw new TokenResponseException('Unable to parse response.');
 		}
 		elseif(isset($data['error'])){
-			throw new TokenResponseException('Error in retrieving token: "' . $data['error'] . '"');
+			throw new TokenResponseException('Error in retrieving token: "'.$data['error'].'"');
 		}
 		
 		$token = new StdOAuth1Token();
@@ -67,4 +68,5 @@ class Flickr extends AbstractService{
 		
 		return $token;
 	}
+	
 }

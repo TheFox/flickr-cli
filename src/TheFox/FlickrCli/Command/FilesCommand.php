@@ -103,7 +103,11 @@ class FilesCommand extends Command{
 					}
 					
 					if($page > 1){
-						$xmlPhotoList = $apiFactory->call('flickr.photosets.getPhotos', array('photoset_id' => $photosetId, 'page' => $page));
+						$xmlPhotoListOptions = array(
+							'photoset_id' => $photosetId,
+							'page' => $page,
+						);
+						$xmlPhotoList = $apiFactory->call('flickr.photosets.getPhotos', $xmlPhotoListOptions);
 					}
 					
 					foreach($xmlPhotoList->photoset->photo as $n => $photo){
