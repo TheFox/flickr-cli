@@ -20,7 +20,7 @@ use Guzzle\Http\Client as GuzzleHttpClient;
 use Monolog\Logger;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
-use Monolog\Handler\ErrorLogHandler;
+// use Monolog\Handler\ErrorLogHandler;
 use Rych\ByteSize\ByteSize;
 use Carbon\Carbon;
 
