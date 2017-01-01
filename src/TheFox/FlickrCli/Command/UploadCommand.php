@@ -48,7 +48,8 @@ class UploadCommand extends Command{
 		$this->addOption('sets', 's', InputOption::VALUE_OPTIONAL, 'Comma separated names. For example: --sets=set1,set2');
 		$this->addOption('recursive', 'r', InputOption::VALUE_NONE, 'Recurse into directories.');
 		$this->addOption('dry-run', null, InputOption::VALUE_NONE, 'Show what would have been transferred.');
-		
+		$this->addOption('move', 'm', InputOption::VALUE_OPTIONAL, 'Move uploaded files to this directory.');
+
 		$this->addArgument('directory', InputArgument::IS_ARRAY, 'Path to directories.');
 
 		$this->configPath = 'config.yml';
@@ -100,7 +101,7 @@ class UploadCommand extends Command{
 		$logFilesFailedStream->setFormatter($logFormatter);
 		$this->logFilesFailed = new Logger('flickr_uploader');
 		$this->logFilesFailed->pushHandler($logFilesFailedStream);
-		
+
 		$config = Yaml::parse($this->configPath);
 		
 		if(
@@ -108,8 +109,6 @@ class UploadCommand extends Command{
 			|| !isset($config['flickr'])
 			|| !isset($config['flickr']['consumer_key'])
 			|| !isset($config['flickr']['consumer_secret'])
-			|| !isset($config['upload']['move_on_success'])
-			|| !isset($config['upload']['uploaded_dir'])
 		){
 			$this->log->critical('[main] config invalid');
 			return 1;
@@ -254,25 +253,21 @@ class UploadCommand extends Command{
 				$photosetsNew[] = $photosetTitle;
 			}
 		}
-		
-		$configUploadedBaseDir = '';
-		if($config['upload']['move_on_success']){
+
+		// Move files after they've been successfully uploaded?
+		$configUploadedBaseDir = false;
+		$move = $input->getOption('move');
+		if($move !== null){
 			$configPathDirname = realpath(dirname($this->configRealPath));
-			$configUploadedBaseDir = $configPathDirname.'/'.$config['upload']['uploaded_dir'];
-			
+			$configUploadedBaseDir = $configPathDirname.'/'.$move;
+			// Make the local directory if it doesn't exist.
 			if(!$filesystem->exists($configUploadedBaseDir)){
-				$config['upload']['move_on_success'] = $filesystem->mkdir($configUploadedBaseDir);
-				$moveStatus = $config['upload']['move_on_success'] ? 'OK' : 'FAILED';
-				$this->log->info(sprintf('[main] create dir: %s, %s',
-					$configUploadedBaseDir, $moveStatus));
+				$filesystem->mkdir($configUploadedBaseDir);
+				$this->log->info('Created directory: '.$configUploadedBaseDir);
 			}
-			
-			$this->log->info('[config] move on success: '.($config['upload']['move_on_success'] ? 'Y' : 'N'));
-			if($config['upload']['move_on_success']){
-				$this->log->info('[config] move after upload path: '.$configUploadedBaseDir);
-			}
+			$this->log->info('Uploaded files will be moved to: '.$configUploadedBaseDir);
 		}
-		
+
 		$totalFiles = 0;
 		$totalFilesUploaded = 0;
 		$fileErrors = 0;
@@ -378,7 +373,7 @@ class UploadCommand extends Command{
 					
 					$this->logFilesSuccessful->info($fileRelativePathStr);
 					
-					if($config['upload']['move_on_success'] && $uploadBaseDirPath){
+					if($uploadBaseDirPath){
 						$this->log->info('[file] move to uploaded dir: '.$uploadDirPath);
 						$filesystem->rename($filePath, $uploadDirPath.'/'.$fileName);
 					}
