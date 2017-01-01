@@ -373,7 +373,7 @@ class UploadCommand extends Command{
 					
 					$this->logFilesSuccessful->info($fileRelativePathStr);
 					
-					if($uploadBaseDirPath){
+					if($uploadDirPath){
 						$this->log->info('[file] move to uploaded dir: '.$uploadDirPath);
 						$filesystem->rename($filePath, $uploadDirPath.'/'.$fileName);
 					}
