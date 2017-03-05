@@ -305,7 +305,7 @@ class DownloadCommand extends Command{
 	 */
 	protected function fetchSinglePhoto($apiFactory, $photo, $dstDirFullPath, Filesystem $filesystem, $basename = null){
 		$id = (string)$photo->attributes()->id;
-		$xmlPhoto = null;
+		
 		try{
 			$xmlPhoto = $apiFactory->call('flickr.photos.getInfo', array(
 				'photo_id' => $id,
@@ -316,11 +316,11 @@ class DownloadCommand extends Command{
 			}
 		}
 		catch(Exception $e){
-			$this->log->error(sprintf('[%s] %s, farm %s, server %s, %s GETINFO FAILED: %s',
-				$media, $id, $farm, $server, $fileName, $e->getMessage()
+			$this->log->error(sprintf('%s, GETINFO FAILED: %s',
+				$id, $e->getMessage()
 			));
 			
-			$this->logFilesFailed->error($id.'.'.$originalFormat);
+			$this->logFilesFailed->error($id);
 
 			return false;
 		}
@@ -418,12 +418,13 @@ class DownloadCommand extends Command{
 			return false;
 		}
 
-		$downloaded = 0;
 		$size = $stream->getSize();
-		$sizeStr = 'N/A';
 		$bytesize = new ByteSize();
-		if($size){
+		if($size !== false){
 			$sizeStr = $bytesize->format($size);
+		}
+		else{
+			$sizeStr = 'N/A';
 		}
 
 		$this->log->info(sprintf("[%s] %s, farm %s, server %s, %s, '%s', %s",
@@ -431,6 +432,7 @@ class DownloadCommand extends Command{
 		));
 
 		$timePrev = time();
+		$downloaded = 0;
 		$downloadedPrev = 0;
 		$downloadedDiff = 0;
 
@@ -452,7 +454,7 @@ class DownloadCommand extends Command{
 			//$totalDownloaded += $dataLen;
 
 			$percent = 0;
-			if($size){
+			if($size !== false){
 				$percent = $downloaded / $size * 100;
 			}
 			if($percent > 100){
@@ -474,7 +476,7 @@ class DownloadCommand extends Command{
 				$downloadedDiffStr = $bytesize->format($downloadedDiff).'/s';
 			}
 
-			if($size){
+			if($size !== false){
 				// If we know the stream size, show a progress bar.
 				printf("[file] %6.2f%% [%s%s] %s %10s\x1b[0K\r",
 					$percent,

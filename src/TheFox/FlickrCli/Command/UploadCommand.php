@@ -30,6 +30,7 @@ class UploadCommand extends Command{
 	
 	public $exit = 0;
 	private $configPath;
+	private $configRealPath;
 	private $logDirPath;
 	private $log;
 	private $logFilesSuccessful;
@@ -285,6 +286,8 @@ class UploadCommand extends Command{
 			$finder->depth(0);
 		}
 		
+		$bytesize = new ByteSize();
+		
 		$directories = $input->getArgument('directory');
 		foreach($directories as $argDir){
 			
@@ -335,8 +338,6 @@ class UploadCommand extends Command{
 					
 					continue;
 				}
-				
-				$bytesize = new ByteSize();
 				
 				if($dryrun){
 					$this->log->info(sprintf("[file] dry upload '%s' '%s' %s",
