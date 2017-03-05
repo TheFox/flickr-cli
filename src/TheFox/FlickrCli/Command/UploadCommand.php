@@ -4,7 +4,6 @@ namespace TheFox\FlickrCli\Command;
 
 use Exception;
 use SplFileInfo;
-
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -23,7 +22,6 @@ use Monolog\Handler\StreamHandler;
 // use Monolog\Handler\ErrorLogHandler;
 use Rych\ByteSize\ByteSize;
 use Carbon\Carbon;
-
 use TheFox\FlickrCli\FlickrCli;
 
 class UploadCommand extends Command{

@@ -3,7 +3,6 @@
 namespace TheFox\FlickrCli\Command;
 
 use Exception;
-
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -17,7 +16,6 @@ use OAuth\Common\Storage\Memory;
 use Rezzza\Flickr\Metadata;
 use Rezzza\Flickr\ApiFactory;
 use Rezzza\Flickr\Http\GuzzleAdapter as RezzzaGuzzleAdapter;
-
 use TheFox\OAuth\Common\Http\Client\GuzzleStreamClient;
 use TheFox\OAuth\OAuth1\Service\Flickr;
 

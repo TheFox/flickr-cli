@@ -21,7 +21,6 @@ use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
 use Rych\ByteSize\ByteSize;
 use Carbon\Carbon;
-
 use TheFox\FlickrCli\FlickrCli;
 
 class DownloadCommand extends Command{
@@ -70,6 +69,7 @@ class DownloadCommand extends Command{
 
 	/**
 	 * Executes the download command.
+	 * 
 	 * @param InputInterface  $input  An InputInterface instance
 	 * @param OutputInterface $output An OutputInterface instance
 	 * @return null|int null or 0 if everything went fine, or an error code
@@ -162,13 +162,16 @@ class DownloadCommand extends Command{
 
 	/**
 	 * Download photos to directories named after the album (i.e. photoset, in the original parlance).
-	 * @return boolean
+	 * 
+	 * @param ApiFactory $apiFactory
+	 * @param InputInterface $input
+	 * @param Filesystem $filesystem
+	 * @return integer
 	 */
-	protected function downloadByAlbumTitle($apiFactory, $input, $filesystem){
+	protected function downloadByAlbumTitle(ApiFactory $apiFactory, InputInterface $input, Filesystem $filesystem){
 		$xml = $apiFactory->call('flickr.photosets.getList');
 		
 		$photosets = $input->getArgument('photosets');
-		
 		
 		$photosetsInUse = array();
 		if(count($photosets)){
@@ -221,7 +224,7 @@ class DownloadCommand extends Command{
 		$totalDownloaded = 0;
 		$totalFiles = 0;
 		
-
+		/** @var $photoset SimpleXMLElement */
 		foreach($xml->photosets->photoset as $photoset){
 			if($this->exit){
 				break;
@@ -266,6 +269,7 @@ class DownloadCommand extends Command{
 					));
 				}
 				
+				/** @var $photo SimpleXMLElement */
 				foreach($xmlPhotoList->photoset->photo as $photo){
 					if($this->exit){
 						break;
@@ -295,15 +299,16 @@ class DownloadCommand extends Command{
 	/**
 	 * Download a single given photo from Flickr. Won't be downloaded if already exists locally; if it is downloaded the
 	 * additional 'filesize' property will be set on the return element.
-	 * @param ApiFactory$apiFactory
-	 * @param string[] $photo
+	 * 
+	 * @param ApiFactory $apiFactory
+	 * @param SimpleXMLElement $photo
 	 * @param string $dstDirFullPath
 	 * @param Filesystem $filesystem
 	 * @param string $basename The filename to save the downloaded file to (without extension).
 	 * @return SimpleXMLElement|boolean Photo metadata as returned by Flickr, or false if something went wrong.
 	 * @throws Exception
 	 */
-	protected function fetchSinglePhoto($apiFactory, $photo, $dstDirFullPath, Filesystem $filesystem, $basename = null){
+	protected function fetchSinglePhoto(ApiFactory $apiFactory, SimpleXMLElement $photo, $dstDirFullPath, Filesystem $filesystem, $basename = null){
 		$id = (string)$photo->attributes()->id;
 		
 		try{
@@ -421,7 +426,7 @@ class DownloadCommand extends Command{
 		$size = $stream->getSize();
 		$bytesize = new ByteSize();
 		if($size !== false){
-			$sizeStr = $bytesize->format($size);
+			$sizeStr = $bytesize->format((int)$size);
 		}
 		else{
 			$sizeStr = 'N/A';
@@ -558,11 +563,11 @@ class DownloadCommand extends Command{
 
 	/**
 	 * Download a single photo.
-	 * @param string[] $photo Basic photo metadata.
+	 * @param SimpleXMLElement $photo Basic photo metadata.
 	 * @param ApiFactory $apiFactory
 	 * @param Filesystem $filesystem
 	 */
-	protected function downloadByIdOnePhoto($photo, ApiFactory $apiFactory, Filesystem $filesystem){
+	protected function downloadByIdOnePhoto(SimpleXMLElement $photo, ApiFactory $apiFactory, Filesystem $filesystem){
 		$idHash = md5($photo['id']);
 		$destinationPath = $this->dstDirPath.'/'.$idHash[0].$idHash[1].'/'.$idHash[2].$idHash[3].'/'.$photo['id'].'/';
 		if(!$filesystem->exists($destinationPath)){

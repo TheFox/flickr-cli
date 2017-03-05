@@ -10,7 +10,6 @@ use OAuth\Common\Http\Uri\Uri;
 use OAuth\Common\Http\Uri\UriInterface;
 use OAuth\Common\Consumer\CredentialsInterface;
 use OAuth\Common\Storage\TokenStorageInterface;
-
 use OAuth\OAuth1\Service\AbstractService;
 
 class Flickr extends AbstractService{
