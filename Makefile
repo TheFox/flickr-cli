@@ -9,6 +9,10 @@ PHPCS_OPTIONS = -v -s --colors --report=full --report-width=160
 COMPOSER = ./composer.phar
 COMPOSER_OPTIONS ?= --no-interaction
 
+# Local installed PHPStan while supporting PHP 5.
+# PHPStan requires PHP 7.
+PHPSTAN = ~/.composer/vendor/bin/phpstan
+
 
 .PHONY: all
 all: install
@@ -23,6 +27,10 @@ update: $(COMPOSER)
 
 .PHONY: test
 test: test_phpcs
+
+.PHONY: test_phpstan
+test_phpstan:
+	$(PHPSTAN) analyse --level 5 --no-progress src
 
 .PHONY: test_phpcs
 test_phpcs: $(PHPCS) $(PHPCS_STANDARD)
