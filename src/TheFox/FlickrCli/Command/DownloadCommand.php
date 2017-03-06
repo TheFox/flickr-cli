@@ -308,7 +308,8 @@ class DownloadCommand extends Command{
 	 * @return SimpleXMLElement|boolean Photo metadata as returned by Flickr, or false if something went wrong.
 	 * @throws Exception
 	 */
-	protected function fetchSinglePhoto(ApiFactory $apiFactory, SimpleXMLElement $photo, $dstDirFullPath, Filesystem $filesystem, $basename = null){
+	protected function fetchSinglePhoto(ApiFactory $apiFactory, SimpleXMLElement $photo, $dstDirFullPath,
+		Filesystem $filesystem, $basename = null){
 		$id = (string)$photo->attributes()->id;
 		
 		try{
