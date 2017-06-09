@@ -7,7 +7,3 @@ install:
     - make install
 before_script:
     - phpenv rehash
-script: make test
-env:
-    global:
-        - COMPOSER_OPTIONS='--prefer-source --no-interaction'

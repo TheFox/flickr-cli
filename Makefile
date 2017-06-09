@@ -25,16 +25,9 @@ update: $(COMPOSER)
 	$(COMPOSER) selfupdate
 	$(COMPOSER) update
 
-.PHONY: test
-test: test_phpcs
-
 .PHONY: test_phpstan
 test_phpstan:
 	$(PHPSTAN) analyse --level 5 --no-progress src
-
-.PHONY: test_phpcs
-test_phpcs: $(PHPCS) $(PHPCS_STANDARD)
-	$(PHPCS) $(PHPCS_OPTIONS)
 
 .PHONY: clean
 clean:

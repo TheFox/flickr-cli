@@ -1,8 +1,5 @@
 CHANGELOG-*.txt
 config.yml
 composer.phar
-log
-test*.jpg
-test.yml
-/uploaded/
 /vendor/
+/tmp/

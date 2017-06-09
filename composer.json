@@ -13,21 +13,20 @@
 		}
 	],
 	"require": {
-		"php": "~5.6 || ~7.0",
-		"rezzza/flickr": "~1.1",
-		"symfony/yaml": "~2.3",
-		"symfony/console": "~3.1",
-		"symfony/filesystem": "~3.1",
-		"symfony/finder": "~3.1",
-		"monolog/monolog": "~1.21",
-		"guzzlehttp/guzzle": "~3.8",
-		"lusitanian/oauth": "~0.2",
-		"rych/bytesize": "~1.0",
-		"nesbot/carbon": "~1.21"
+		"php": "^5.6 || ^7.0",
+		"rezzza/flickr": "^1.1",
+		"symfony/yaml": "^2.3",
+		"symfony/console": "^3.1",
+		"symfony/filesystem": "^3.1",
+		"symfony/finder": "^3.1",
+		"monolog/monolog": "^1.21",
+		"guzzlehttp/guzzle": "^3.8",
+		"lusitanian/oauth": "^0.2",
+		"rych/bytesize": "^1.0",
+		"nesbot/carbon": "^1.21"
 	},
 	"require-dev": {
-		"doctrine/common": "~2.7",
-		"thefox/phpcsrs": "~1.6"
+		"doctrine/common": "^2.7"
 	},
 	"autoload": {
 		"psr-0": {
