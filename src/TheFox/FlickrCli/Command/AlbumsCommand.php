@@ -21,6 +21,9 @@ use Monolog\Formatter\LineFormatter;
 
 class AlbumsCommand extends Command
 {
+    /**
+     * @var int
+     */
     public $exit = 0;
 
     /**
@@ -38,6 +41,11 @@ class AlbumsCommand extends Command
         $this->configPath = 'config.yml';
     }
 
+    /**
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return int
+     */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->signalHandlerSetup();
@@ -101,6 +109,9 @@ class AlbumsCommand extends Command
         }
     }
 
+    /**
+     * @param int $signal
+     */
     private function signalHandler($signal)
     {
         $this->exit++;

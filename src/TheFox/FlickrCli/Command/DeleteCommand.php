@@ -21,7 +21,9 @@ use Carbon\Carbon;
 
 class DeleteCommand extends Command
 {
-
+    /**
+     * @var int
+     */
     public $exit = 0;
 
     /**
@@ -29,8 +31,19 @@ class DeleteCommand extends Command
      */
     private $configPath;
 
+    /**
+     * @var string
+     */
     private $logDirPath;
+
+    /**
+     * @var Logger
+     */
     private $log;
+
+    /**
+     * @var Logger
+     */
     private $logFilesFailed;
 
     protected function configure()
@@ -46,6 +59,11 @@ class DeleteCommand extends Command
         $this->logDirPath = 'log';
     }
 
+    /**
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return int
+     */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->signalHandlerSetup();
@@ -182,6 +200,9 @@ class DeleteCommand extends Command
         }
     }
 
+    /**
+     * @param int $signal
+     */
     private function signalHandler($signal)
     {
         $this->exit++;

@@ -25,20 +25,40 @@ use TheFox\FlickrCli\FlickrCli;
 
 class DownloadCommand extends Command
 {
+    /**
+     * @var int
+     */
     public $exit = 0;
+
+    /**
+     * @var string
+     */
     private $configPath;
+    
+    /**
+     * @var string
+     */
     private $logDirPath;
 
-    /** @var string The destination directory for downloaded files. No trailing slash. */
+    /** @var string  */
+    /**
+     * @var string The destination directory for downloaded files. No trailing slash.
+     */
     private $dstDirPath;
 
-    /** @var Logger General logger */
+    /**
+     * @var Logger General logger.
+     */
     private $log;
 
-    /** @var Logger Log for information about failed downloads. */
+    /**
+     * @var Logger Log for information about failed downloads.
+     */
     private $logFilesFailed;
 
-    /** @var boolean Whether to download even if a local copy already exists. */
+    /**
+     * @var bool Whether to download even if a local copy already exists. 
+     */
     protected $forceDownload;
 
     protected function configure()
@@ -74,7 +94,7 @@ class DownloadCommand extends Command
      *
      * @param InputInterface $input An InputInterface instance
      * @param OutputInterface $output An OutputInterface instance
-     * @return null|int null or 0 if everything went fine, or an error code
+     * @return int 0 if everything went fine, or an error code.
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
@@ -669,6 +689,9 @@ class DownloadCommand extends Command
         }
     }
 
+    /**
+     * @param int $signal
+     */
     private function signalHandler($signal)
     {
         $this->exit++;

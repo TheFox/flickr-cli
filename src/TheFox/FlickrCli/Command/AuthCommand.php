@@ -39,6 +39,11 @@ class AuthCommand extends Command
         $this->configPath = 'config.yml';
     }
 
+    /**
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return int
+     */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         if ($input->hasOption('config') && $input->getOption('config')) {

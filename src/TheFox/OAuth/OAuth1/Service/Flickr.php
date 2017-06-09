@@ -11,9 +11,18 @@ use OAuth\Common\Http\Uri\UriInterface;
 use OAuth\Common\Consumer\CredentialsInterface;
 use OAuth\Common\Storage\TokenStorageInterface;
 use OAuth\OAuth1\Service\AbstractService;
+use OAuth\OAuth1\Token\TokenInterface;
 
 class Flickr extends AbstractService
 {
+    /**
+     * Flickr constructor.
+     * @param CredentialsInterface $credentials
+     * @param ClientInterface $httpClient
+     * @param TokenStorageInterface $storage
+     * @param SignatureInterface $signature
+     * @param UriInterface|null $baseApiUri
+     */
     public function __construct(CredentialsInterface $credentials, ClientInterface $httpClient,
                                 TokenStorageInterface $storage, SignatureInterface $signature, UriInterface $baseApiUri = null)
     {
@@ -23,21 +32,35 @@ class Flickr extends AbstractService
         }
     }
 
+    /**
+     * @return Uri
+     */
     public function getRequestTokenEndpoint()
     {
         return new Uri('https://www.flickr.com/services/oauth/request_token');
     }
 
+    /**
+     * @return Uri
+     */
     public function getAuthorizationEndpoint()
     {
         return new Uri('https://www.flickr.com/services/oauth/authorize');
     }
 
+    /**
+     * @return Uri
+     */
     public function getAccessTokenEndpoint()
     {
         return new Uri('https://www.flickr.com/services/oauth/access_token');
     }
 
+    /**
+     * @param string $responseBody
+     * @return StdOAuth1Token|TokenInterface
+     * @throws TokenResponseException
+     */
     protected function parseRequestTokenResponse($responseBody)
     {
         parse_str($responseBody, $data);
@@ -49,6 +72,11 @@ class Flickr extends AbstractService
         return $this->parseAccessTokenResponse($responseBody);
     }
 
+    /**
+     * @param string $responseBody
+     * @return StdOAuth1Token
+     * @throws TokenResponseException
+     */
     protected function parseAccessTokenResponse($responseBody)
     {
         #print "parseAccessTokenResponse\n";
