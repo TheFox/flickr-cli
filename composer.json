@@ -26,7 +26,8 @@
 		"nesbot/carbon": "^1.21"
 	},
 	"require-dev": {
-		"doctrine/common": "^2.7"
+		"doctrine/common": "^2.7",
+		"phpstan/phpstan": "^0.7"
 	},
 	"autoload": {
 		"psr-0": {
