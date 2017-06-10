@@ -2,6 +2,7 @@
 
 namespace TheFox\FlickrCli\Command;
 
+use DateTime;
 use Exception;
 use SimpleXMLElement;
 use Symfony\Component\Console\Command\Command;
@@ -34,13 +35,13 @@ class DownloadCommand extends Command
      * @var string
      */
     private $configPath;
-    
+
     /**
      * @var string
      */
     private $logDirPath;
 
-    /** @var string  */
+    /** @var string */
     /**
      * @var string The destination directory for downloaded files. No trailing slash.
      */
@@ -57,13 +58,13 @@ class DownloadCommand extends Command
     private $logFilesFailed;
 
     /**
-     * @var bool Whether to download even if a local copy already exists. 
+     * @var bool Whether to download even if a local copy already exists.
      */
     protected $forceDownload;
 
     protected function configure()
     {
-        $d = new \DateTime();
+        $d = new DateTime();
         $this->setName('download');
         $this->setDescription('Download files from Flickr.');
 
@@ -96,7 +97,7 @@ class DownloadCommand extends Command
      * @param OutputInterface $output An OutputInterface instance
      * @return int 0 if everything went fine, or an error code.
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $fs = new Filesystem();
 
@@ -190,7 +191,7 @@ class DownloadCommand extends Command
      * @param Filesystem $filesystem
      * @return integer
      */
-    protected function downloadByAlbumTitle(ApiFactory $apiFactory, InputInterface $input, Filesystem $filesystem)
+    protected function downloadByAlbumTitle(ApiFactory $apiFactory, InputInterface $input, Filesystem $filesystem): int
     {
         $xml = $apiFactory->call('flickr.photosets.getList');
 
@@ -330,8 +331,8 @@ class DownloadCommand extends Command
      * @return SimpleXMLElement|boolean Photo metadata as returned by Flickr, or false if something went wrong.
      * @throws Exception
      */
-    protected function fetchSinglePhoto(ApiFactory $apiFactory, SimpleXMLElement $photo, $dstDirFullPath,
-                                        Filesystem $filesystem, $basename = null)
+    protected function fetchSinglePhoto(ApiFactory $apiFactory, SimpleXMLElement $photo, string $dstDirFullPath,
+                                        Filesystem $filesystem, string $basename = null)
     {
         $id = (string)$photo->attributes()->id;
 
@@ -537,6 +538,7 @@ class DownloadCommand extends Command
 
     /**
      * Download all photos, whether in a set/album or not, into directories named by photo ID.
+     *
      * @param ApiFactory $apiFactory
      * @param Filesystem $filesystem
      */
@@ -581,6 +583,7 @@ class DownloadCommand extends Command
 
     /**
      * Download a single photo.
+     *
      * @param SimpleXMLElement $photo Basic photo metadata.
      * @param ApiFactory $apiFactory
      * @param Filesystem $filesystem
@@ -692,7 +695,7 @@ class DownloadCommand extends Command
     /**
      * @param int $signal
      */
-    private function signalHandler($signal)
+    private function signalHandler(int $signal)
     {
         $this->exit++;
 

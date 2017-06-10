@@ -97,7 +97,7 @@ class UploadCommand extends Command
      * @param OutputInterface $output
      * @return int
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if ($input->hasOption('config') && $input->getOption('config')) {
             $this->configPath = $input->getOption('config');
@@ -539,7 +539,7 @@ class UploadCommand extends Command
     /**
      * @param int $signal
      */
-    private function signalHandler($signal)
+    private function signalHandler(int $signal)
     {
         $this->exit++;
 

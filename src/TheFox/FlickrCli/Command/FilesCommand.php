@@ -2,6 +2,7 @@
 
 namespace TheFox\FlickrCli\Command;
 
+use SimpleXMLElement;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -10,15 +11,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Yaml;
-
-// use OAuth\Common\Consumer\Credentials;
-// use OAuth\OAuth1\Signature\Signature;
-// use OAuth\Common\Storage\Memory;
 use Rezzza\Flickr\Metadata;
 use Rezzza\Flickr\ApiFactory;
 use Rezzza\Flickr\Http\GuzzleAdapter as RezzzaGuzzleAdapter;
-use Monolog\Logger;
-use Monolog\Formatter\LineFormatter;
 
 class FilesCommand extends Command
 {
@@ -49,7 +44,7 @@ class FilesCommand extends Command
      * @param OutputInterface $output
      * @return int
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->signalHandlerSetup();
 
@@ -82,6 +77,11 @@ class FilesCommand extends Command
         $xml = $apiFactory->call('flickr.photosets.getList');
 
         $photosetsTitles = [];
+
+        /**
+         * @var int $n
+         * @var SimpleXMLElement $photoset
+         */
         foreach ($xml->photosets->photoset as $n => $photoset) {
             if ($this->exit) {
                 break;
@@ -119,6 +119,10 @@ class FilesCommand extends Command
                         $xmlPhotoList = $apiFactory->call('flickr.photosets.getPhotos', $xmlPhotoListOptions);
                     }
 
+                    /**
+                     * @var int $n
+                     * @var SimpleXMLElement $photo
+                     */
                     foreach ($xmlPhotoList->photoset->photo as $n => $photo) {
                         if ($this->exit) {
                             break;
@@ -156,7 +160,7 @@ class FilesCommand extends Command
     /**
      * @param int $signal
      */
-    private function signalHandler($signal)
+    private function signalHandler(int $signal)
     {
         $this->exit++;
 

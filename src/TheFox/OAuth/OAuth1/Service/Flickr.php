@@ -35,7 +35,7 @@ class Flickr extends AbstractService
     /**
      * @return Uri
      */
-    public function getRequestTokenEndpoint()
+    public function getRequestTokenEndpoint(): Uri
     {
         return new Uri('https://www.flickr.com/services/oauth/request_token');
     }
@@ -43,7 +43,7 @@ class Flickr extends AbstractService
     /**
      * @return Uri
      */
-    public function getAuthorizationEndpoint()
+    public function getAuthorizationEndpoint(): Uri
     {
         return new Uri('https://www.flickr.com/services/oauth/authorize');
     }
@@ -51,17 +51,17 @@ class Flickr extends AbstractService
     /**
      * @return Uri
      */
-    public function getAccessTokenEndpoint()
+    public function getAccessTokenEndpoint(): Uri
     {
         return new Uri('https://www.flickr.com/services/oauth/access_token');
     }
 
     /**
      * @param string $responseBody
-     * @return StdOAuth1Token|TokenInterface
+     * @return StdOAuth1Token
      * @throws TokenResponseException
      */
-    protected function parseRequestTokenResponse($responseBody)
+    protected function parseRequestTokenResponse($responseBody): StdOAuth1Token
     {
         parse_str($responseBody, $data);
         if (null === $data || !is_array($data)) {
@@ -77,7 +77,7 @@ class Flickr extends AbstractService
      * @return StdOAuth1Token
      * @throws TokenResponseException
      */
-    protected function parseAccessTokenResponse($responseBody)
+    protected function parseAccessTokenResponse($responseBody): StdOAuth1Token
     {
         #print "parseAccessTokenResponse\n";
 

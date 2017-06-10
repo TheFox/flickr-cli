@@ -3,6 +3,7 @@
 namespace TheFox\FlickrCli\Command;
 
 use Exception;
+use SimpleXMLElement;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -64,7 +65,7 @@ class DeleteCommand extends Command
      * @param OutputInterface $output
      * @return int
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->signalHandlerSetup();
 
@@ -126,6 +127,11 @@ class DeleteCommand extends Command
         $this->log->info('[main] delete files');
 
         $photosetsTitles = [];
+        
+        /**
+         * @var int $n
+         * @var SimpleXMLElement $photoset
+         */
         foreach ($xml->photosets->photoset as $n => $photoset) {
             if ($this->exit) {
                 break;
@@ -166,6 +172,10 @@ class DeleteCommand extends Command
                         print "\n\n";
                     }
 
+                    /**
+                     * @var int $n
+                     * @var SimpleXMLElement $photo
+                     */
                     foreach ($xmlPhotoList->photoset->photo as $n => $photo) {
                         if ($this->exit) {
                             break;
@@ -203,7 +213,7 @@ class DeleteCommand extends Command
     /**
      * @param int $signal
      */
-    private function signalHandler($signal)
+    private function signalHandler(int $signal)
     {
         $this->exit++;
 

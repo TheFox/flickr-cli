@@ -44,7 +44,7 @@ class AuthCommand extends Command
      * @param OutputInterface $output
      * @return int
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if ($input->hasOption('config') && $input->getOption('config')) {
             $this->configPath = $input->getOption('config');
@@ -135,7 +135,7 @@ class AuthCommand extends Command
      * @param SymfonyStyle $io The IO object.
      * @return string The permission, one of 'read', write', or 'delete'. Defaults to 'read'.
      */
-    protected function getPermissionType(SymfonyStyle $io)
+    protected function getPermissionType(SymfonyStyle $io): string
     {
         $question = 'The permission you grant to this application depends on what you want to do with it.';
         $question .= 'Please select from the following three options:';

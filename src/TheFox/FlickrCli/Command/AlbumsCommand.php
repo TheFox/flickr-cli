@@ -46,7 +46,7 @@ class AlbumsCommand extends Command
      * @param OutputInterface $output
      * @return int
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->signalHandlerSetup();
 
@@ -112,7 +112,7 @@ class AlbumsCommand extends Command
     /**
      * @param int $signal
      */
-    private function signalHandler($signal)
+    private function signalHandler(int $signal)
     {
         $this->exit++;
 
