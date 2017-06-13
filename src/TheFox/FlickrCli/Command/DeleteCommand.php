@@ -40,12 +40,12 @@ class DeleteCommand extends Command
     /**
      * @var Logger
      */
-    private $log;
+    private $logger;
 
     /**
      * @var Logger
      */
-    private $logFilesFailed;
+    private $loggerFilesFailed;
 
     protected function configure()
     {
@@ -108,26 +108,26 @@ class DeleteCommand extends Command
         $nowFormated = $now->format('Ymd');
 
         $logFormatter = new LineFormatter("[%datetime%] %level_name%: %message%\n");
-        $this->log = new Logger('flickr_deleter');
+        $this->logger = new Logger('flickr_deleter');
 
         $logHandlerStderr = new StreamHandler('php://stderr', Logger::DEBUG);
         $logHandlerStderr->setFormatter($logFormatter);
-        $this->log->pushHandler($logHandlerStderr);
+        $this->logger->pushHandler($logHandlerStderr);
 
         $logHandlerFile = new StreamHandler($this->logDirPath . '/flickr_delete_' . $nowFormated . '.log', Logger::INFO);
         $logHandlerFile->setFormatter($logFormatter);
-        $this->log->pushHandler($logHandlerFile);
+        $this->logger->pushHandler($logHandlerFile);
 
         $logFilesFailedStreamFilePath = $this->logDirPath . '/flickr_delete_files_failed_' . $nowFormated . '.log';
         $logFilesFailedStream = new StreamHandler($logFilesFailedStreamFilePath, Logger::INFO);
         $logFilesFailedStream->setFormatter($logFormatter);
-        $this->logFilesFailed = new Logger('flickr_deleter');
-        $this->logFilesFailed->pushHandler($logFilesFailedStream);
+        $this->loggerFilesFailed = new Logger('flickr_deleter');
+        $this->loggerFilesFailed->pushHandler($logFilesFailedStream);
 
-        $this->log->info('[main] delete files');
+        $this->logger->info('[main] delete files');
 
         $photosetsTitles = [];
-        
+
         /**
          * @var int $n
          * @var SimpleXMLElement $photoset
@@ -153,7 +153,7 @@ class DeleteCommand extends Command
                 $xmlPhotoListPagesTotal = (int)$xmlPhotoList->photoset->attributes()->pages;
                 $xmlPhotoListPhotosTotal = (int)$xmlPhotoList->photoset->attributes()->total;
 
-                $this->log->info('[photoset] ' . $photosetTitle . ': ' . $xmlPhotoListPhotosTotal);
+                $this->logger->info('[photoset] ' . $photosetTitle . ': ' . $xmlPhotoListPhotosTotal);
 
                 $fileCount = 0;
                 for ($page = 1; $page <= $xmlPhotoListPagesTotal; $page++) {
@@ -185,10 +185,10 @@ class DeleteCommand extends Command
                         $id = (string)$photo->attributes()->id;
                         try {
                             $apiFactory->call('flickr.photos.delete', ['photo_id' => $id]);
-                            $this->log->info('[photo] ' . $page . '/' . $fileCount . ' delete ' . $id);
+                            $this->logger->info('[photo] ' . $page . '/' . $fileCount . ' delete ' . $id);
                         } catch (Exception $e) {
-                            $this->log->error('[photo] ' . $page . '/' . $fileCount . ' delete ' . $id . ' FAILED');
-                            $this->logFilesFailed->error($id);
+                            $this->logger->error('[photo] ' . $page . '/' . $fileCount . ' delete ' . $id . ' FAILED');
+                            $this->loggerFilesFailed->error($id);
                         }
                     }
                 }
@@ -218,19 +218,10 @@ class DeleteCommand extends Command
         $this->exit++;
 
         switch ($signal) {
-            case SIGTERM:
-                break;
             case SIGINT:
                 print PHP_EOL;
                 break;
-            case SIGHUP:
-                break;
-            case SIGQUIT:
-                break;
-            case SIGKILL:
-                break;
-            case SIGUSR1:
-                break;
+
             default:
         }
 

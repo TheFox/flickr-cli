@@ -50,12 +50,12 @@ class DownloadCommand extends Command
     /**
      * @var Logger General logger.
      */
-    private $log;
+    private $logger;
 
     /**
      * @var Logger Log for information about failed downloads.
      */
-    private $logFilesFailed;
+    private $loggerFilesFailed;
 
     /**
      * @var bool Whether to download even if a local copy already exists.
@@ -114,24 +114,24 @@ class DownloadCommand extends Command
 
         $logFormatter = new LineFormatter("[%datetime%] %level_name%: %message%\n");
 
-        $this->log = new Logger('flickr_downloader');
+        $this->logger = new Logger('flickr_downloader');
 
         $logHandlerStderr = new StreamHandler('php://stderr', Logger::DEBUG);
         $logHandlerStderr->setFormatter($logFormatter);
-        $this->log->pushHandler($logHandlerStderr);
+        $this->logger->pushHandler($logHandlerStderr);
 
         $logHandlerFile = new StreamHandler($this->logDirPath . '/flickr_download_' . $nowFormated . '.log', Logger::INFO);
         $logHandlerFile->setFormatter($logFormatter);
-        $this->log->pushHandler($logHandlerFile);
+        $this->logger->pushHandler($logHandlerFile);
 
         $logFilesFailedStreamFilePath = $this->logDirPath . '/flickr_download_files_failed_' . $nowFormated . '.log';
         $logFilesFailedStream = new StreamHandler($logFilesFailedStreamFilePath, Logger::INFO);
         $logFilesFailedStream->setFormatter($logFormatter);
-        $this->logFilesFailed = new Logger('flickr_downloader');
-        $this->logFilesFailed->pushHandler($logFilesFailedStream);
+        $this->loggerFilesFailed = new Logger('flickr_downloader');
+        $this->loggerFilesFailed->pushHandler($logFilesFailedStream);
 
-        $this->log->info('start');
-        $this->logFilesFailed->info('start');
+        $this->logger->info('start');
+        $this->loggerFilesFailed->info('start');
 
         // Destination directory. Default to 'photosets'.
         $customDestDir = $input->getOption('destination');
@@ -150,10 +150,10 @@ class DownloadCommand extends Command
             $this->configPath = $input->getOption('config');
         }
         if (!$fs->exists($this->configPath)) {
-            $this->log->critical('Config file not found: ' . $this->configPath);
+            $this->logger->critical('Config file not found: ' . $this->configPath);
             return 1;
         }
-        $this->log->info('Config file: ' . $this->configPath);
+        $this->logger->info('Config file: ' . $this->configPath);
         $config = Yaml::parse($this->configPath);
         if (
             !isset($config)
@@ -161,7 +161,7 @@ class DownloadCommand extends Command
             || !isset($config['flickr']['consumer_key'])
             || !isset($config['flickr']['consumer_secret'])
         ) {
-            $this->log->critical('[main] config invalid');
+            $this->logger->critical('[main] config invalid');
             return 1;
         }
 
@@ -173,11 +173,11 @@ class DownloadCommand extends Command
         // Run the actual download.
         if ($input->getOption('id-dirs')) {
             // If downloaded files should be saved into download-dir/hash/hash/photo-id/ directories.
-            $this->log->info('Downloading to ID-based directories in: ' . $this->dstDirPath);
+            $this->logger->info('Downloading to ID-based directories in: ' . $this->dstDirPath);
             $this->downloadById($apiFactory, $fs);
         } else {
             // If download directories should match Album titles.
-            $this->log->info('Downloading to Album-based directories in: ' . $this->dstDirPath);
+            $this->logger->info('Downloading to Album-based directories in: ' . $this->dstDirPath);
             $this->downloadByAlbumTitle($apiFactory, $input, $fs);
         }
         return 0;
@@ -259,16 +259,16 @@ class DownloadCommand extends Command
 
             $photosetId = (int)$photoset->attributes()->id;
             $photosetTitle = (string)$photoset->title;
-            $this->log->info('[photoset] ' . $photosetTitle);
+            $this->logger->info('[photoset] ' . $photosetTitle);
 
             $dstDirFullPath = $this->dstDirPath . '/' . $photosetTitle;
 
             if (!$filesystem->exists($dstDirFullPath)) {
-                $this->log->info('[dir] create: ' . $dstDirFullPath);
+                $this->logger->info('[dir] create: ' . $dstDirFullPath);
                 $filesystem->mkdir($dstDirFullPath);
             }
 
-            $this->log->info('[photoset] ' . $photosetTitle . ': get photo list');
+            $this->logger->info('[photoset] ' . $photosetTitle . ': get photo list');
             $xmlPhotoList = $apiFactory->call('flickr.photosets.getPhotos', [
                 'photoset_id' => $photosetId,
             ]);
@@ -282,10 +282,10 @@ class DownloadCommand extends Command
                     break;
                 }
 
-                $this->log->info('[page] ' . $page);
+                $this->logger->info('[page] ' . $page);
 
                 if ($page > 1) {
-                    $this->log->info('[photoset] ' . $photosetTitle . ': get photo list');
+                    $this->logger->info('[photoset] ' . $photosetTitle . ': get photo list');
                     $xmlPhotoList = $apiFactory->call('flickr.photosets.getPhotos', [
                         'photoset_id' => $photosetId,
                         'page' => $page,
@@ -297,7 +297,7 @@ class DownloadCommand extends Command
                     if ($this->exit) {
                         break;
                     }
-                    $this->log->debug('[media] ' . $page . '/' . $fileCount . ' ' . $photo['id']);
+                    $this->logger->debug('[media] ' . $page . '/' . $fileCount . ' ' . $photo['id']);
                     $downloaded = $this->fetchSinglePhoto($apiFactory, $photo, $dstDirFullPath, $filesystem);
                     if (isset($downloaded->filesize)) {
                         $totalDownloaded += $downloaded->filesize;
@@ -309,12 +309,12 @@ class DownloadCommand extends Command
         }
 
         $bytesize = new ByteSize();
-        $this->log->info('[main] total downloaded: ' . ($totalDownloaded > 0 ? $bytesize->format($totalDownloaded) : 0));
-        $this->log->info('[main] total files:      ' . $totalFiles);
-        $this->log->info('[main] end');
+        $this->logger->info('[main] total downloaded: ' . ($totalDownloaded > 0 ? $bytesize->format($totalDownloaded) : 0));
+        $this->logger->info('[main] total files:      ' . $totalFiles);
+        $this->logger->info('[main] end');
 
-        $this->log->info('exit');
-        $this->logFilesFailed->info('exit');
+        $this->logger->info('exit');
+        $this->loggerFilesFailed->info('exit');
 
         return $this->exit;
     }
@@ -345,11 +345,11 @@ class DownloadCommand extends Command
                 return false;
             }
         } catch (Exception $e) {
-            $this->log->error(sprintf('%s, GETINFO FAILED: %s',
+            $this->logger->error(sprintf('%s, GETINFO FAILED: %s',
                 $id, $e->getMessage()
             ));
 
-            $this->logFilesFailed->error($id);
+            $this->loggerFilesFailed->error($id);
 
             return false;
         }
@@ -374,7 +374,7 @@ class DownloadCommand extends Command
         $filePathTmp = $dstDirFullPath . '/' . $id . '.' . $originalFormat . '.tmp';
 
         if ($filesystem->exists($filePath) && !$this->forceDownload) {
-            $this->log->debug('File ' . $id . ' already downloaded to ' . $filePath);
+            $this->logger->debug('File ' . $id . ' already downloaded to ' . $filePath);
             return $xmlPhoto->photo;
         }
 
@@ -424,8 +424,8 @@ class DownloadCommand extends Command
             // 	}
             // }
 
-            $this->log->error('video not supported yet');
-            $this->logFilesFailed->error($id . ': video not supported yet');
+            $this->logger->error('video not supported yet');
+            $this->loggerFilesFailed->error($id . ': video not supported yet');
             return false;
         }
 
@@ -437,10 +437,10 @@ class DownloadCommand extends Command
             $request = $client->get();
             $stream = $streamRequestFactory->fromRequest($request);
         } catch (Exception $e) {
-            $this->log->error(sprintf('[%s] %s, farm %s, server %s, %s FAILED: %s',
+            $this->logger->error(sprintf('[%s] %s, farm %s, server %s, %s FAILED: %s',
                 $media, $id, $farm, $server, $fileName, $e->getMessage()
             ));
-            $this->logFilesFailed->error($id . '.' . $originalFormat);
+            $this->loggerFilesFailed->error($id . '.' . $originalFormat);
 
             return false;
         }
@@ -453,7 +453,7 @@ class DownloadCommand extends Command
             $sizeStr = 'N/A';
         }
 
-        $this->log->info(sprintf("[%s] %s, farm %s, server %s, %s, '%s', %s",
+        $this->logger->info(sprintf("[%s] %s, farm %s, server %s, %s, '%s', %s",
             $media, $id, $farm, $server, $fileName, $description, $sizeStr
         ));
 
@@ -526,8 +526,8 @@ class DownloadCommand extends Command
         } elseif (($size && $fileTmpSize != $size) || $fileTmpSize <= 1024) {
             $filesystem->remove($filePathTmp);
 
-            $this->log->error('[' . $media . '] ' . $id . ' FAILED: temp file size wrong: ' . $fileTmpSize);
-            $this->logFilesFailed->error($id . '.' . $originalFormat);
+            $this->logger->error('[' . $media . '] ' . $id . ' FAILED: temp file size wrong: ' . $fileTmpSize);
+            $this->loggerFilesFailed->error($id . '.' . $originalFormat);
         } else {
             // Rename to its final destination, and return the photo metadata.
             $filesystem->rename($filePathTmp, $filePath, $this->forceDownload);
@@ -548,7 +548,7 @@ class DownloadCommand extends Command
         $notInSetPage = 1;
         do {
             $notInSet = $apiFactory->call('flickr.photos.getNotInSet', ['page' => $notInSetPage]);
-            $this->log->info('Not in set p' . $notInSetPage . '/' . $notInSet->photos['pages']);
+            $this->logger->info('Not in set p' . $notInSetPage . '/' . $notInSet->photos['pages']);
             $notInSetPage++;
             foreach ($notInSet->photos->photo as $photo) {
                 $this->downloadByIdOnePhoto($photo, $apiFactory, $filesystem);
@@ -559,7 +559,7 @@ class DownloadCommand extends Command
         $setsPage = 1;
         do {
             $sets = $apiFactory->call('flickr.photosets.getList', ['page' => $setsPage]);
-            $this->log->info('Sets p' . $setsPage . '/' . $sets->photosets['pages']);
+            $this->logger->info('Sets p' . $setsPage . '/' . $sets->photosets['pages']);
             foreach ($sets->photosets->photoset as $set) {
                 // Loop through all pages in this set.
                 $setPhotosPage = 1;
@@ -569,7 +569,7 @@ class DownloadCommand extends Command
                         'page' => $setPhotosPage,
                     ];
                     $setPhotos = $apiFactory->call('flickr.photosets.getPhotos', $params);
-                    $this->log->info(sprintf('[Set %s] %s photos (p%s/%s)',
+                    $this->logger->info(sprintf('[Set %s] %s photos (p%s/%s)',
                         $set->title, $setPhotos->photoset['total'], $setPhotosPage, $setPhotos->photoset['pages']));
                     foreach ($setPhotos->photoset->photo as $photo) {
                         $this->downloadByIdOnePhoto($photo, $apiFactory, $filesystem);
@@ -599,7 +599,7 @@ class DownloadCommand extends Command
         // Save the actual file.
         $info = $this->fetchSinglePhoto($apiFactory, $photo, $destinationPath, $filesystem, $photo['id']);
         if ($info === false) {
-            $this->log->error('Unable to get metadata about photo: ' . $photo['id']);
+            $this->logger->error('Unable to get metadata about photo: ' . $photo['id']);
             return;
         }
 
@@ -675,20 +675,20 @@ class DownloadCommand extends Command
     private function signalHandlerSetup()
     {
         if (function_exists('pcntl_signal')) {
-            $this->log->info('Setup Signal Handler');
+            $this->logger->info('Setup Signal Handler');
 
             declare(ticks=1);
 
             $setup = pcntl_signal(SIGTERM, [$this, 'signalHandler']);
-            $this->log->debug('Setup Signal Handler, SIGTERM: ' . ($setup ? 'OK' : 'FAILED'));
+            $this->logger->debug('Setup Signal Handler, SIGTERM: ' . ($setup ? 'OK' : 'FAILED'));
 
             $setup = pcntl_signal(SIGINT, [$this, 'signalHandler']);
-            $this->log->debug('Setup Signal Handler, SIGINT: ' . ($setup ? 'OK' : 'FAILED'));
+            $this->logger->debug('Setup Signal Handler, SIGINT: ' . ($setup ? 'OK' : 'FAILED'));
 
             $setup = pcntl_signal(SIGHUP, [$this, 'signalHandler']);
-            $this->log->debug('Setup Signal Handler, SIGHUP: ' . ($setup ? 'OK' : 'FAILED'));
+            $this->logger->debug('Setup Signal Handler, SIGHUP: ' . ($setup ? 'OK' : 'FAILED'));
         } else {
-            $this->log->warning('pcntl_signal() function not found for Signal Handler Setup');
+            $this->logger->warning('pcntl_signal() function not found for Signal Handler Setup');
         }
     }
 
@@ -701,29 +701,35 @@ class DownloadCommand extends Command
 
         switch ($signal) {
             case SIGTERM:
-                $this->log->notice('signal: SIGTERM');
+                $this->logger->notice('signal: SIGTERM');
                 break;
+
             case SIGINT:
                 print PHP_EOL;
-                $this->log->notice('signal: SIGINT');
+                $this->logger->notice('signal: SIGINT');
                 break;
+
             case SIGHUP:
-                $this->log->notice('signal: SIGHUP');
+                $this->logger->notice('signal: SIGHUP');
                 break;
+
             case SIGQUIT:
-                $this->log->notice('signal: SIGQUIT');
+                $this->logger->notice('signal: SIGQUIT');
                 break;
+
             case SIGKILL:
-                $this->log->notice('signal: SIGKILL');
+                $this->logger->notice('signal: SIGKILL');
                 break;
+
             case SIGUSR1:
-                $this->log->notice('signal: SIGUSR1');
+                $this->logger->notice('signal: SIGUSR1');
                 break;
+
             default:
-                $this->log->notice('signal: N/A');
+                $this->logger->notice('signal: N/A');
         }
 
-        $this->log->notice('main abort [' . $this->exit . ']');
+        $this->logger->notice('main abort [' . $this->exit . ']');
 
         if ($this->exit >= 2) {
             exit(1);

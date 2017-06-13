@@ -165,19 +165,10 @@ class FilesCommand extends Command
         $this->exit++;
 
         switch ($signal) {
-            case SIGTERM:
-                break;
             case SIGINT:
                 print PHP_EOL;
                 break;
-            case SIGHUP:
-                break;
-            case SIGQUIT:
-                break;
-            case SIGKILL:
-                break;
-            case SIGUSR1:
-                break;
+
             default:
         }
 
