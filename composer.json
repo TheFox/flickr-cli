@@ -36,7 +36,7 @@
     },
     "autoload": {
         "psr-0": {
-            "TheFox": "src"
+            "TheFox\\": "src"
         }
     }
 }
