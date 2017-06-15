@@ -5,7 +5,7 @@ namespace TheFox\FlickrCli;
 class FlickrCli
 {
     const NAME = 'FlickrCli';
-    const VERSION = '1.1.0';
+    const VERSION = '1.2.0-dev';
 
     const UPLOAD_PROGRESSBAR_ITEMS = 35;
     const DOWNLOAD_PROGRESSBAR_ITEMS = 35;
