@@ -79,8 +79,7 @@ class DeleteCommand extends Command
             return 1;
         }
         $config = Yaml::parse($this->configPath);
-        if (
-            !isset($config)
+        if (!isset($config)
             || !isset($config['flickr'])
             || !isset($config['flickr']['consumer_key'])
             || !isset($config['flickr']['consumer_secret'])
@@ -148,7 +147,6 @@ class DeleteCommand extends Command
             }
 
             if (in_array($photosetTitle, $photosets)) {
-
                 $xmlPhotoList = $apiFactory->call('flickr.photosets.getPhotos', ['photoset_id' => $photosetId]);
                 $xmlPhotoListPagesTotal = (int)$xmlPhotoList->photoset->attributes()->pages;
                 $xmlPhotoListPhotosTotal = (int)$xmlPhotoList->photoset->attributes()->total;
@@ -193,7 +191,6 @@ class DeleteCommand extends Command
                     }
                 }
             }
-
         }
 
         return 0;
@@ -229,5 +226,4 @@ class DeleteCommand extends Command
             exit(1);
         }
     }
-
 }

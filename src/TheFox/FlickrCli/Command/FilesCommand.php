@@ -58,8 +58,7 @@ class FilesCommand extends Command
             return 1;
         }
         $config = Yaml::parse($this->configPath);
-        if (
-            !isset($config)
+        if (!isset($config)
             || !isset($config['flickr'])
             || !isset($config['flickr']['consumer_key'])
             || !isset($config['flickr']['consumer_secret'])
@@ -138,9 +137,7 @@ class FilesCommand extends Command
                         print '  ' . $page . '/' . $fileCount . ' ' . $id . "\n";
                     }
                 }
-
             }
-
         }
 
         return 0;

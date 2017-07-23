@@ -155,8 +155,7 @@ class DownloadCommand extends Command
         }
         $this->logger->info('Config file: ' . $this->configPath);
         $config = Yaml::parse($this->configPath);
-        if (
-            !isset($config)
+        if (!isset($config)
             || !isset($config['flickr'])
             || !isset($config['flickr']['consumer_key'])
             || !isset($config['flickr']['consumer_secret'])
@@ -199,7 +198,6 @@ class DownloadCommand extends Command
 
         $photosetsInUse = [];
         if (count($photosets)) {
-
             $photosetsTitles = [];
             foreach ($xml->photosets->photoset as $photoset) {
                 if ($this->exit) {
@@ -305,7 +303,6 @@ class DownloadCommand extends Command
                     $fileCount++;
                 }
             }
-
         }
 
         $bytesize = new ByteSize();
@@ -331,9 +328,14 @@ class DownloadCommand extends Command
      * @return SimpleXMLElement|boolean Photo metadata as returned by Flickr, or false if something went wrong.
      * @throws Exception
      */
-    protected function fetchSinglePhoto(ApiFactory $apiFactory, SimpleXMLElement $photo, string $dstDirFullPath,
-                                        Filesystem $filesystem, string $basename = null)
-    {
+    protected function fetchSinglePhoto(
+        ApiFactory $apiFactory,
+        SimpleXMLElement $photo,
+        string $dstDirFullPath,
+        Filesystem $filesystem,
+        string $basename = null
+    ) {
+    
         $id = (string)$photo->attributes()->id;
 
         try {
@@ -345,8 +347,10 @@ class DownloadCommand extends Command
                 return false;
             }
         } catch (Exception $e) {
-            $this->logger->error(sprintf('%s, GETINFO FAILED: %s',
-                $id, $e->getMessage()
+            $this->logger->error(sprintf(
+                '%s, GETINFO FAILED: %s',
+                $id,
+                $e->getMessage()
             ));
 
             $this->loggerFilesFailed->error($id);
@@ -437,8 +441,14 @@ class DownloadCommand extends Command
             $request = $client->get();
             $stream = $streamRequestFactory->fromRequest($request);
         } catch (Exception $e) {
-            $this->logger->error(sprintf('[%s] %s, farm %s, server %s, %s FAILED: %s',
-                $media, $id, $farm, $server, $fileName, $e->getMessage()
+            $this->logger->error(sprintf(
+                '[%s] %s, farm %s, server %s, %s FAILED: %s',
+                $media,
+                $id,
+                $farm,
+                $server,
+                $fileName,
+                $e->getMessage()
             ));
             $this->loggerFilesFailed->error($id . '.' . $originalFormat);
 
@@ -453,8 +463,15 @@ class DownloadCommand extends Command
             $sizeStr = 'N/A';
         }
 
-        $this->logger->info(sprintf("[%s] %s, farm %s, server %s, %s, '%s', %s",
-            $media, $id, $farm, $server, $fileName, $description, $sizeStr
+        $this->logger->info(sprintf(
+            "[%s] %s, farm %s, server %s, %s, '%s', %s",
+            $media,
+            $id,
+            $farm,
+            $server,
+            $fileName,
+            $description,
+            $sizeStr
         ));
 
         $timePrev = time();
@@ -504,7 +521,8 @@ class DownloadCommand extends Command
 
             if ($size !== false) {
                 // If we know the stream size, show a progress bar.
-                printf("[file] %6.2f%% [%s%s] %s %10s\x1b[0K\r",
+                printf(
+                    "[file] %6.2f%% [%s%s] %s %10s\x1b[0K\r",
                     $percent,
                     str_repeat('#', $progressbarDownloaded),
                     str_repeat(' ', $progressbarRest),
@@ -569,8 +587,13 @@ class DownloadCommand extends Command
                         'page' => $setPhotosPage,
                     ];
                     $setPhotos = $apiFactory->call('flickr.photosets.getPhotos', $params);
-                    $this->logger->info(sprintf('[Set %s] %s photos (p%s/%s)',
-                        $set->title, $setPhotos->photoset['total'], $setPhotosPage, $setPhotos->photoset['pages']));
+                    $this->logger->info(sprintf(
+                        '[Set %s] %s photos (p%s/%s)',
+                        $set->title,
+                        $setPhotos->photoset['total'],
+                        $setPhotosPage,
+                        $setPhotos->photoset['pages']
+                    ));
                     foreach ($setPhotos->photoset->photo as $photo) {
                         $this->downloadByIdOnePhoto($photo, $apiFactory, $filesystem);
                     }
