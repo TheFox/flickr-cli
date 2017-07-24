@@ -76,11 +76,12 @@ class UploadCommand extends Command
         $this->setName('upload');
         $this->setDescription('Upload files to Flickr.');
 
+        $csvDesc = 'Comma separated names. For example: --sets=set1,set2';
         $this->addOption('config', 'c', InputOption::VALUE_OPTIONAL, 'Path to config file. Default: config.yml');
         $this->addOption('log', 'l', InputOption::VALUE_OPTIONAL, 'Path to log directory. Default: log');
         $this->addOption('description', 'd', InputOption::VALUE_OPTIONAL, 'Description for all uploaded files.');
-        $this->addOption('tags', 't', InputOption::VALUE_OPTIONAL, 'Comma separated names. For example: --tags=tag1,tag2');
-        $this->addOption('sets', 's', InputOption::VALUE_OPTIONAL, 'Comma separated names. For example: --sets=set1,set2');
+        $this->addOption('tags', 't', InputOption::VALUE_OPTIONAL, $csvDesc);
+        $this->addOption('sets', 's', InputOption::VALUE_OPTIONAL, $csvDesc);
         $this->addOption('recursive', 'r', InputOption::VALUE_NONE, 'Recurse into directories.');
         $this->addOption('dry-run', null, InputOption::VALUE_NONE, 'Show what would have been transferred.');
         $this->addOption('move', 'm', InputOption::VALUE_OPTIONAL, 'Move uploaded files to this directory.');
@@ -127,7 +128,10 @@ class UploadCommand extends Command
         $logHandlerStderr->setFormatter($logFormatter);
         $this->logger->pushHandler($logHandlerStderr);
 
-        $logHandlerFile = new StreamHandler($this->logDirPath . '/flickr_upload_' . $nowFormated . '.log', Logger::INFO);
+        $logHandlerFile = new StreamHandler(
+            $this->logDirPath . '/flickr_upload_' . $nowFormated . '.log',
+            Logger::INFO
+        );
         $logHandlerFile->setFormatter($logFormatter);
         $this->logger->pushHandler($logHandlerFile);
 
@@ -386,7 +390,8 @@ class UploadCommand extends Command
                     continue;
                 }
 
-                $this->logger->info("[file] upload '" . $fileRelativePathStr . "'  " . $bytesize->format($this->uploadFileSize));
+                $this->logger->info("[file] upload '"
+                    . $fileRelativePathStr . "'  " . $bytesize->format($this->uploadFileSize));
                 $xml = null;
                 try {
                     $xml = $apiFactoryVerbose->upload($filePath, $fileName, $description, $tags);

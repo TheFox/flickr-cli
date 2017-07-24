@@ -113,7 +113,10 @@ class DeleteCommand extends Command
         $logHandlerStderr->setFormatter($logFormatter);
         $this->logger->pushHandler($logHandlerStderr);
 
-        $logHandlerFile = new StreamHandler($this->logDirPath . '/flickr_delete_' . $nowFormated . '.log', Logger::INFO);
+        $logHandlerFile = new StreamHandler(
+            $this->logDirPath . '/flickr_delete_' . $nowFormated . '.log',
+            Logger::INFO
+        );
         $logHandlerFile->setFormatter($logFormatter);
         $this->logger->pushHandler($logHandlerFile);
 
