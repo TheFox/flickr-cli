@@ -10,7 +10,7 @@ A command-line interface to [Flickr](https://www.flickr.com/). Upload and downlo
 
 2. Install dependencies:
 
-		composer install --no-dev
+		composer install
 
 3. Go to <https://www.flickr.com/services/apps/create/apply/> to create a new API key.
 The first time you run `./application.php auth` you'll be prompted to enter your new consumer key and secret.
