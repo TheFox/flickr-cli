@@ -8,12 +8,8 @@ A command-line interface to [Flickr](https://www.flickr.com/). Upload and downlo
 	
 		git clone https://github.com/TheFox/flickr-cli.git
 
-2. Update dependencies:
-	
-		make
-	
-	or
-	
+2. Install dependencies:
+
 		composer install --no-dev
 
 3. Go to <https://www.flickr.com/services/apps/create/apply/> to create a new API key.
