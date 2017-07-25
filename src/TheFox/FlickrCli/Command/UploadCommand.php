@@ -76,12 +76,13 @@ class UploadCommand extends Command
         $this->setName('upload');
         $this->setDescription('Upload files to Flickr.');
 
-        $csvDesc = 'Comma separated names. For example: --sets=set1,set2';
         $this->addOption('config', 'c', InputOption::VALUE_OPTIONAL, 'Path to config file. Default: config.yml');
         $this->addOption('log', 'l', InputOption::VALUE_OPTIONAL, 'Path to log directory. Default: log');
         $this->addOption('description', 'd', InputOption::VALUE_OPTIONAL, 'Description for all uploaded files.');
-        $this->addOption('tags', 't', InputOption::VALUE_OPTIONAL, $csvDesc);
-        $this->addOption('sets', 's', InputOption::VALUE_OPTIONAL, $csvDesc);
+        $csvTagsDesc = 'Comma separated names. For example: --tags=tag1,"Tag two"';
+        $this->addOption('tags', 't', InputOption::VALUE_OPTIONAL, $csvTagsDesc);
+        $csvSetsDesc = 'Comma separated names. For example: --sets="Set one",set2';
+        $this->addOption('sets', 's', InputOption::VALUE_OPTIONAL, $csvSetsDesc);
         $this->addOption('recursive', 'r', InputOption::VALUE_NONE, 'Recurse into directories.');
         $this->addOption('dry-run', null, InputOption::VALUE_NONE, 'Show what would have been transferred.');
         $this->addOption('move', 'm', InputOption::VALUE_OPTIONAL, 'Move uploaded files to this directory.');
