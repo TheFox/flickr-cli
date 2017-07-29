@@ -79,8 +79,10 @@ class UploadCommand extends Command
         $this->addOption('config', 'c', InputOption::VALUE_OPTIONAL, 'Path to config file. Default: config.yml');
         $this->addOption('log', 'l', InputOption::VALUE_OPTIONAL, 'Path to log directory. Default: log');
         $this->addOption('description', 'd', InputOption::VALUE_OPTIONAL, 'Description for all uploaded files.');
-        $this->addOption('tags', 't', InputOption::VALUE_OPTIONAL, 'Comma separated names. For example: --tags=tag1,tag2');
-        $this->addOption('sets', 's', InputOption::VALUE_OPTIONAL, 'Comma separated names. For example: --sets=set1,set2');
+        $csvTagsDesc = 'Comma separated names. For example: --tags=tag1,"Tag two"';
+        $this->addOption('tags', 't', InputOption::VALUE_OPTIONAL, $csvTagsDesc);
+        $csvSetsDesc = 'Comma separated names. For example: --sets="Set one",set2';
+        $this->addOption('sets', 's', InputOption::VALUE_OPTIONAL, $csvSetsDesc);
         $this->addOption('recursive', 'r', InputOption::VALUE_NONE, 'Recurse into directories.');
         $this->addOption('dry-run', null, InputOption::VALUE_NONE, 'Show what would have been transferred.');
         $this->addOption('move', 'm', InputOption::VALUE_OPTIONAL, 'Move uploaded files to this directory.');
@@ -127,7 +129,10 @@ class UploadCommand extends Command
         $logHandlerStderr->setFormatter($logFormatter);
         $this->logger->pushHandler($logHandlerStderr);
 
-        $logHandlerFile = new StreamHandler($this->logDirPath . '/flickr_upload_' . $nowFormated . '.log', Logger::INFO);
+        $logHandlerFile = new StreamHandler(
+            $this->logDirPath . '/flickr_upload_' . $nowFormated . '.log',
+            Logger::INFO
+        );
         $logHandlerFile->setFormatter($logFormatter);
         $this->logger->pushHandler($logHandlerFile);
 
@@ -145,8 +150,7 @@ class UploadCommand extends Command
 
         $config = Yaml::parse($this->configPath);
 
-        if (
-            !isset($config)
+        if (!isset($config)
             || !isset($config['flickr'])
             || !isset($config['flickr']['consumer_key'])
             || !isset($config['flickr']['consumer_secret'])
@@ -200,7 +204,7 @@ class UploadCommand extends Command
         $uploadedDiffPrev = [0, 0, 0, 0, 0];
 
         $curlOptions[CURLOPT_PROGRESSFUNCTION] = function ($ch, $dlTotal = 0, $dlNow = 0, $ulTotal = 0, $ulNow = 0)
-        use ($timePrev, $uploadedTotal, $uploadedPrev, $uploadedDiffPrev) {
+ use ($timePrev, $uploadedTotal, $uploadedPrev, $uploadedDiffPrev) {
 
             $uploadedDiff = $ulNow - $uploadedPrev;
             $uploadedPrev = $ulNow;
@@ -232,7 +236,8 @@ class UploadCommand extends Command
                 }
             }
 
-            printf("[file] %6.2f%% [%s%s] %s %10s\x1b[0K\r",
+            printf(
+                "[file] %6.2f%% [%s%s] %s %10s\x1b[0K\r",
                 $percent,
                 str_repeat('#', $progressbarUploaded),
                 str_repeat(' ', $progressbarRest),
@@ -328,7 +333,6 @@ class UploadCommand extends Command
 
         $directories = $input->getArgument('directory');
         foreach ($directories as $argDir) {
-
             $srcDir = new SplFileInfo($argDir);
 
             $uploadBaseDirPath = '';
@@ -378,12 +382,17 @@ class UploadCommand extends Command
                 }
 
                 if ($dryrun) {
-                    $this->logger->info(sprintf("[file] dry upload '%s' '%s' %s",
-                        $fileRelativePathStr, $dirRelativePath, $bytesize->format($this->uploadFileSize)));
+                    $this->logger->info(sprintf(
+                        "[file] dry upload '%s' '%s' %s",
+                        $fileRelativePathStr,
+                        $dirRelativePath,
+                        $bytesize->format($this->uploadFileSize)
+                    ));
                     continue;
                 }
 
-                $this->logger->info("[file] upload '" . $fileRelativePathStr . "'  " . $bytesize->format($this->uploadFileSize));
+                $this->logger->info("[file] upload '"
+                    . $fileRelativePathStr . "'  " . $bytesize->format($this->uploadFileSize));
                 $xml = null;
                 try {
                     $xml = $apiFactoryVerbose->upload($filePath, $fileName, $description, $tags);
@@ -440,7 +449,9 @@ class UploadCommand extends Command
                                 'primary_photo_id' => $photoId,
                             ]);
                         } catch (Exception $e) {
-                            $this->logger->critical('[photoset] create ' . $photosetTitle . ' FAILED: ' . $e->getMessage());
+                            $this->logger->critical(
+                                '[photoset] create ' . $photosetTitle . ' FAILED: ' . $e->getMessage()
+                            );
                             return 1;
                         }
                         if ($xml) {
@@ -507,7 +518,8 @@ class UploadCommand extends Command
         $this->logger->info('[main] total uploaded: ' . ($uploadedTotal > 0 ? $bytesize->format($uploadedTotal) : 0));
         $this->logger->info('[main] total files:    ' . $totalFiles);
         $this->logger->info('[main] files uploaded: ' . $totalFilesUploaded);
-        $this->logger->info('[main] files failed:   ' . $fileErrors . (count($filesFailed) ? "\n" . join("\n", $filesFailed) : ''));
+        $filesFailedMsg = count($filesFailed) ? "\n" . join("\n", $filesFailed) : '';
+        $this->logger->info('[main] files failed:   ' . $fileErrors . $filesFailedMsg);
 
         $this->logger->info('exit');
         $this->loggerFilesSuccessful->info('exit');
