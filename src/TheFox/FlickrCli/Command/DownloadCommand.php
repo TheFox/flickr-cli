@@ -24,7 +24,7 @@ use Rych\ByteSize\ByteSize;
 use Carbon\Carbon;
 use TheFox\FlickrCli\FlickrCli;
 
-class DownloadCommand extends Command
+class DownloadCommand extends FlickrCliCommand
 {
     /**
      * @var int
@@ -32,30 +32,19 @@ class DownloadCommand extends Command
     public $exit = 0;
 
     /**
-     * @var string
-     */
-    private $configPath;
-
-    /**
-     * @var string
-     */
-    private $logDirPath;
-
-    /** @var string */
-    /**
      * @var string The destination directory for downloaded files. No trailing slash.
      */
-    private $dstDirPath;
+    protected $dstDirPath;
 
     /**
      * @var Logger General logger.
      */
-    private $logger;
+    protected $logger;
 
     /**
      * @var Logger Log for information about failed downloads.
      */
-    private $loggerFilesFailed;
+    protected $loggerFilesFailed;
 
     /**
      * @var bool Whether to download even if a local copy already exists.
@@ -64,12 +53,10 @@ class DownloadCommand extends Command
 
     protected function configure()
     {
-        $d = new DateTime();
+        parent::configure();
         $this->setName('download');
         $this->setDescription('Download files from Flickr.');
-
-        $this->addOption('config', 'c', InputOption::VALUE_OPTIONAL, 'Path to config file. Default: config.yml');
-        $this->addOption('log', 'l', InputOption::VALUE_OPTIONAL, 'Path to log directory. Default: log');
+        
         $this->addOption('destination', 'd', InputOption::VALUE_OPTIONAL, 'Path to save files. Default: photosets');
 
         $idDirsDescr = 'Save downloaded files into ID-based directories. Default is to group by Album titles instead.';
@@ -86,8 +73,6 @@ class DownloadCommand extends Command
 
         $this->addArgument('photosets', InputArgument::OPTIONAL, 'Photosets to download.');
 
-        $this->configPath = 'config.yml';
-        $this->logDirPath = 'log';
         $this->dstDirPath = 'photosets';
     }
 
@@ -100,41 +85,9 @@ class DownloadCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $fs = new Filesystem();
-
-        // Set up logging.
-        if ($input->hasOption('log') && $input->getOption('log')) {
-            $this->logDirPath = $input->getOption('log');
-        }
-        if (!$fs->exists($this->logDirPath)) {
-            $fs->mkdir($this->logDirPath);
-        }
-
-        $now = Carbon::now();
-        $nowFormated = $now->format('Ymd');
-
-        $logFormatter = new LineFormatter("[%datetime%] %level_name%: %message%\n");
-
-        $this->logger = new Logger('flickr_downloader');
-
-        $logHandlerStderr = new StreamHandler('php://stderr', Logger::DEBUG);
-        $logHandlerStderr->setFormatter($logFormatter);
-        $this->logger->pushHandler($logHandlerStderr);
-
-        $logHandlerFile = new StreamHandler(
-            $this->logDirPath . '/flickr_download_' . $nowFormated . '.log',
-            Logger::INFO
-        );
-        $logHandlerFile->setFormatter($logFormatter);
-        $this->logger->pushHandler($logHandlerFile);
-
-        $logFilesFailedStreamFilePath = $this->logDirPath . '/flickr_download_files_failed_' . $nowFormated . '.log';
-        $logFilesFailedStream = new StreamHandler($logFilesFailedStreamFilePath, Logger::INFO);
-        $logFilesFailedStream->setFormatter($logFormatter);
-        $this->loggerFilesFailed = new Logger('flickr_downloader');
-        $this->loggerFilesFailed->pushHandler($logFilesFailedStream);
-
+        $this->logger = $this->getLogger($input);
         $this->logger->info('start');
+        $this->loggerFilesFailed = $this->getLogger($input, 'failed');
         $this->loggerFilesFailed->info('start');
 
         // Destination directory. Default to 'photosets'.
@@ -142,31 +95,15 @@ class DownloadCommand extends Command
         if (!empty($customDestDir)) {
             $this->dstDirPath = rtrim($customDestDir, '/');
         }
-        if (!$fs->exists($this->dstDirPath)) {
-            $fs->mkdir($this->dstDirPath);
+        if (!$this->fs->exists($this->dstDirPath)) {
+            $this->fs->mkdir($this->dstDirPath);
         }
 
         // Force download?
         $this->forceDownload = $input->getOption('force');
 
-        // Load and check the configuration file.
-        if ($input->hasOption('config') && $input->getOption('config')) {
-            $this->configPath = $input->getOption('config');
-        }
-        if (!$fs->exists($this->configPath)) {
-            $this->logger->critical('Config file not found: ' . $this->configPath);
-            return 1;
-        }
-        $this->logger->info('Config file: ' . $this->configPath);
-        $config = Yaml::parse($this->configPath);
-        if (!isset($config)
-            || !isset($config['flickr'])
-            || !isset($config['flickr']['consumer_key'])
-            || !isset($config['flickr']['consumer_secret'])
-        ) {
-            $this->logger->critical('[main] config invalid');
-            return 1;
-        }
+        // Get config.
+        $config = $this->getConfig($input);
 
         // Set up the Flickr API.
         $metadata = new Metadata($config['flickr']['consumer_key'], $config['flickr']['consumer_secret']);
@@ -177,11 +114,11 @@ class DownloadCommand extends Command
         if ($input->getOption('id-dirs')) {
             // If downloaded files should be saved into download-dir/hash/hash/photo-id/ directories.
             $this->logger->info('Downloading to ID-based directories in: ' . $this->dstDirPath);
-            $this->downloadById($apiFactory, $fs);
+            $this->downloadById($apiFactory, $this->fs);
         } else {
             // If download directories should match Album titles.
             $this->logger->info('Downloading to Album-based directories in: ' . $this->dstDirPath);
-            $this->downloadByAlbumTitle($apiFactory, $input, $fs);
+            $this->downloadByAlbumTitle($apiFactory, $input, $this->fs);
         }
         return 0;
     }
