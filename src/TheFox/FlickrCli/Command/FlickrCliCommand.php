@@ -79,20 +79,14 @@ abstract class FlickrCliCommand extends Command
 
     /**
      * Load and check the configuration file and retrieve its contents.
-     * @return string[]
+     * @return string[][]
      * @throws Exception If there is a problem with the specified config file.
      */
     protected function getConfig(InputInterface $input)
     {
-        $configFile = 'config.yml';
-        if ($input->hasOption('config') && $input->getOption('config')) {
-            $configFile = $input->getOption('config');
-        }
+        $configFile = $this->getConfigFilepath($input);
         $logger = $this->getLogger($input);
-        if (!$this->fs->exists($configFile)) {
-            throw new Exception('Config file not found: ' . $configFile);
-        }
-        $logger->info('Config file in use: ' . $configFile);
+        $logger->debug('Config file in use: ' . $configFile);
         $config = Yaml::parse($configFile);
         if (!isset($config)
             || !isset($config['flickr'])
@@ -102,5 +96,24 @@ abstract class FlickrCliCommand extends Command
             throw new Exception('Config file must contain consumer key and secret.');
         }
         return $config;
+    }
+
+    /**
+     * Get the relative filesystem path to the config.yml file.
+     * @param InputInterface $input The input object from which to get the option value.
+     * @param bool $requireExistence Require that the file exists (otherwise, throw an exception).
+     * @return string The file path.
+     * @throws Exception If the file doesn't exist.
+     */
+    protected function getConfigFilepath(InputInterface $input, $requireExistence = true)
+    {
+        $configFile = 'config.yml';
+        if ($input->hasOption('config') && $input->getOption('config')) {
+            $configFile = $input->getOption('config');
+        }
+        if (!$this->fs->exists($configFile) && $requireExistence) {
+            throw new Exception('Config file not found: ' . $configFile);
+        }
+        return $configFile;
     }
 }
