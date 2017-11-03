@@ -4,6 +4,7 @@ namespace TheFox\FlickrCli\Command;
 
 use DateTime;
 use Exception;
+use RuntimeException;
 use SimpleXMLElement;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -71,7 +72,7 @@ class DownloadCommand extends FlickrCliCommand
         // $this->addOption('recursive', 'r', InputOption::VALUE_NONE, 'Recurse into directories.');
         // $this->addOption('dry-run', null, InputOption::VALUE_NONE, 'Show what would have been transferred.');
 
-        $this->addArgument('photosets', InputArgument::OPTIONAL, 'Photosets to download.');
+        $this->addArgument('photosets', InputArgument::IS_ARRAY, 'Photosets to download.');
 
         $this->dstDirPath = 'photosets';
     }
@@ -136,6 +137,9 @@ class DownloadCommand extends FlickrCliCommand
         $xml = $apiFactory->call('flickr.photosets.getList');
 
         $photosets = $input->getArgument('photosets');
+        if (!is_array($photosets)){
+            throw new RuntimeException('photosets is not an array');
+        }
 
         $photosetsInUse = [];
         if (count($photosets)) {
