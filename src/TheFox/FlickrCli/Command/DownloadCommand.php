@@ -57,7 +57,7 @@ class DownloadCommand extends FlickrCliCommand
         parent::configure();
         $this->setName('download');
         $this->setDescription('Download files from Flickr.');
-        
+
         $this->addOption('destination', 'd', InputOption::VALUE_OPTIONAL, 'Path to save files. Default: photosets');
 
         $idDirsDescr = 'Save downloaded files into ID-based directories. Default is to group by Album titles instead.';
@@ -137,7 +137,7 @@ class DownloadCommand extends FlickrCliCommand
         $xml = $apiFactory->call('flickr.photosets.getList');
 
         $photosets = $input->getArgument('photosets');
-        if (!is_array($photosets)){
+        if (!is_array($photosets)) {
             throw new RuntimeException('photosets is not an array');
         }
 
@@ -281,7 +281,6 @@ class DownloadCommand extends FlickrCliCommand
         Filesystem $filesystem,
         string $basename = null
     ) {
-    
         $id = (string)$photo->attributes()->id;
 
         try {
