@@ -5,16 +5,12 @@ A command-line interface to [Flickr](https://www.flickr.com/). Upload and downlo
 ## Installation
 
 1. Clone from Github:
-	
+
 		git clone https://github.com/TheFox/flickr-cli.git
 
-2. Update dependencies:
-	
-		make
-	
-	or
-	
-		composer install --no-dev
+2. Install dependencies:
+
+		composer install
 
 3. Go to <https://www.flickr.com/services/apps/create/apply/> to create a new API key.
 The first time you run `./application.php auth` you'll be prompted to enter your new consumer key and secret.
@@ -52,6 +48,31 @@ and saves the full original photo file along with a `metadata.yml` file containi
 The hashes, which are the first two sets of two characters of the MD5 hash of the ID,
 are required in order to prevent a single directory from containing too many subdirectories
 (to avoid problems with some filesystems).
+
+## Usage of the Docker Image
+
+Build the docker image:
+
+    docker build -t flickr-cli .
+
+Run the ```application.php``` using the docker image built before:
+
+		docker run -it --rm -u $(id -u):$(id -g) -v $PWD:/mnt flickr-cli
+
+Get the access token (it will create ```config.yml``` file in current directory):
+
+		docker run -it --rm -u $(id -u):$(id -g) -v $PWD:/mnt flickr-cli auth
+
+
+Upload directory ```2017.06.01-Spindleruv_mlyn``` full of JPEGs to Flickr:
+
+		docker run -it --rm -u $(id -u):$(id -g) -v $PWD:/mnt flickr-cli upload 2017.06.01-Spindleruv_mlyn --tags "2017.06.01 Spindleruv_mlyn" --sets "2017.06.01-Spindleruv_mlyn"
+
+For Docker image troubleshooting you can use:
+
+		docker run -it --entrypoint=/bin/bash --rm -u $(id -u):$(id -g) -v $PWD:/mnt flickr-cli
+		or
+		docker run -it --entrypoint=/bin/bash --rm -v $PWD:/mnt flickr-cli
 
 ## Flickr API documentation
 
