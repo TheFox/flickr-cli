@@ -5,6 +5,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 use Symfony\Component\Console\Application;
 
+use TheFox\FlickrCli\Command\PiwigoCommand;
 use TheFox\FlickrCli\FlickrCli;
 use TheFox\FlickrCli\Command\AlbumsCommand;
 use TheFox\FlickrCli\Command\AuthCommand;
@@ -20,4 +21,5 @@ $application->add(new DeleteCommand());
 $application->add(new DownloadCommand());
 $application->add(new FilesCommand());
 $application->add(new UploadCommand());
+$application->add(new PiwigoCommand());
 $application->run();
