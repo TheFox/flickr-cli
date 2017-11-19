@@ -13,6 +13,7 @@
 .env
 .env.example
 README.md
+phpcs.xml
 
 .dockerignore
 Dockerfile

@@ -6,7 +6,7 @@ ENV FLICKRCLI_CONFIG /data/config.yml
 
 RUN apt-get update && \
 	apt-get install -y apt-transport-https build-essential curl libcurl3 libcurl4-openssl-dev libicu-dev zlib1g-dev libxml2-dev && \
-	docker-php-ext-install curl xml zip bcmath && \
+	docker-php-ext-install curl xml zip bcmath pcntl && \
 	apt-get clean
 
 # Install Composer.
