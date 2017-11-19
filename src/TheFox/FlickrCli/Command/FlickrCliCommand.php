@@ -17,7 +17,6 @@ use Symfony\Component\Yaml\Yaml;
  */
 abstract class FlickrCliCommand extends Command
 {
-
     /** @var Filesystem */
     protected $fs;
 
@@ -110,6 +109,8 @@ abstract class FlickrCliCommand extends Command
         $configFile = 'config.yml';
         if ($input->hasOption('config') && $input->getOption('config')) {
             $configFile = $input->getOption('config');
+        } elseif ($envConfigFile = getenv('FLICKRCLI_CONFIG')) {
+            $configFile = $envConfigFile;
         }
         if (!$this->fs->exists($configFile) && $requireExistence) {
             throw new Exception('Config file not found: ' . $configFile);

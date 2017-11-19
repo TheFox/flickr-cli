@@ -51,32 +51,38 @@ are required in order to prevent a single directory from containing too many sub
 
 ## Usage of the Docker Image
 
-Build the docker image:
+### Setup
 
-    docker build -t flickr-cli .
+To use this software within Docker follow this steps.
 
-Run the ```application.php``` using the docker image built before:
+1. Create a volume. This is used to store the configuration file for the `auth` step.
 
-		docker run -it --rm -u $(id -u):$(id -g) -v $PWD:/mnt flickr-cli
+        docker volume create flickrcli
 
-Get the access token (it will create ```config.yml``` file in current directory):
+2. Get the access token (it will create `config.yml` file in the volume).
 
-		docker run -it --rm -u $(id -u):$(id -g) -v $PWD:/mnt flickr-cli auth
+        docker run --rm -it -u $(id -u):$(id -g) -v "$PWD":/mnt -v flickrcli:/data thefox21/flickr-cli auth
 
+### Usage
 
-Upload directory ```2017.06.01-Spindleruv_mlyn``` full of JPEGs to Flickr:
+Upload directory 2017.06.01-Spindleruv_mlyn full of JPEGs to Flickr:
 
-		docker run -it --rm -u $(id -u):$(id -g) -v $PWD:/mnt flickr-cli upload 2017.06.01-Spindleruv_mlyn --tags "2017.06.01 Spindleruv_mlyn" --sets "2017.06.01-Spindleruv_mlyn"
+    docker run --rm -it -u $(id -u):$(id -g) -v "$PWD":/mnt -v flickrcli:/data thefox21/flickr-cli upload 2017.06.01-Spindleruv_mlyn --tags "2017.06.01 Spindleruv_mlyn" --sets "2017.06.01-Spindleruv_mlyn"
 
 For Docker image troubleshooting you can use:
 
-		docker run -it --entrypoint=/bin/bash --rm -u $(id -u):$(id -g) -v $PWD:/mnt flickr-cli
-		or
-		docker run -it --entrypoint=/bin/bash --rm -v $PWD:/mnt flickr-cli
+    docker run --rm -it -u $(id -u):$(id -g) -v "$PWD":/mnt -v flickrcli:/data --entrypoint=/bin/bash thefox21/flickr-cli
 
-## Flickr API documentation
+### Paths
 
-<http://www.flickr.com/services/api/>
+- `/app` - Main Application directory.
+- `/data` - Volume for variable data.
+- `/mnt` - Host system's `$PWD`.
+
+## Documentations
+
+- [Flickr API documentation](http://www.flickr.com/services/api/)
+- [Docker documentation](https://docs.docker.com/)
 
 ## License
 

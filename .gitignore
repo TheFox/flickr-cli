@@ -3,3 +3,5 @@ config.yml
 composer.phar
 /vendor/
 /tmp/
+.env
+.idea
