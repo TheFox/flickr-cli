@@ -2,11 +2,9 @@
 
 namespace TheFox\FlickrCli\Command;
 
-use DateTime;
 use Exception;
 use RuntimeException;
 use SimpleXMLElement;
-use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -19,10 +17,7 @@ use Rezzza\Flickr\Http\GuzzleAdapter as RezzzaGuzzleAdapter;
 use Guzzle\Http\Client as GuzzleHttpClient;
 use Guzzle\Stream\PhpStreamRequestFactory;
 use Monolog\Logger;
-use Monolog\Formatter\LineFormatter;
-use Monolog\Handler\StreamHandler;
 use Rych\ByteSize\ByteSize;
-use Carbon\Carbon;
 use TheFox\FlickrCli\FlickrCli;
 
 class DownloadCommand extends FlickrCliCommand
@@ -55,6 +50,7 @@ class DownloadCommand extends FlickrCliCommand
     protected function configure()
     {
         parent::configure();
+
         $this->setName('download');
         $this->setDescription('Download files from Flickr.');
 
@@ -66,12 +62,6 @@ class DownloadCommand extends FlickrCliCommand
         $forceDescr = 'Force Flickr CLI to download photos even if they already exist locally. ';
         $forceDescr .= 'Default is to skip existing downloads.';
         $this->addOption('force', 'f', InputOption::VALUE_NONE, $forceDescr);
-        // $csvDesc = 'Comma separated names. For example: --tags=tag1,tag2';
-        // $this->addOption('tags', 't', InputOption::VALUE_OPTIONAL, $csvDesc);
-        // $this->addOption('sets', 's', InputOption::VALUE_OPTIONAL, $csvDesc);
-        // $this->addOption('recursive', 'r', InputOption::VALUE_NONE, 'Recurse into directories.');
-        // $this->addOption('dry-run', null, InputOption::VALUE_NONE, 'Show what would have been transferred.');
-
         $this->addArgument('photosets', InputArgument::IS_ARRAY, 'Photosets to download.');
 
         $this->dstDirPath = 'photosets';

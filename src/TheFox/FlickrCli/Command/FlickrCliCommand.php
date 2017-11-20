@@ -17,7 +17,9 @@ use Symfony\Component\Yaml\Yaml;
  */
 abstract class FlickrCliCommand extends Command
 {
-    /** @var Filesystem */
+    /**
+     * @var Filesystem
+     */
     protected $fs;
 
     /**
@@ -26,6 +28,7 @@ abstract class FlickrCliCommand extends Command
     public function __construct($name = null)
     {
         parent::__construct($name);
+
         $this->fs = new Filesystem();
     }
 
@@ -36,12 +39,16 @@ abstract class FlickrCliCommand extends Command
     protected function configure()
     {
         parent::configure();
-        $this->addOption('config', 'c', InputOption::VALUE_OPTIONAL, 'Path to config file. Default: ./config.yml');
-        $this->addOption('log', 'l', InputOption::VALUE_OPTIONAL, 'Path to log directory. Default: ./log');
+
+        $this
+            ->addOption('config', 'c', InputOption::VALUE_OPTIONAL, 'Path to config file. Default: ./config.yml')
+            ->addOption('log', 'l', InputOption::VALUE_OPTIONAL, 'Path to log directory. Default: ./log')
+        ;
     }
 
     /**
      * Get a new logger object, identified by the name of this command.
+     *
      * @param InputInterface $input
      * @param string $label The label to identify which logger this is.
      * @return Logger
@@ -49,6 +56,7 @@ abstract class FlickrCliCommand extends Command
     protected function getLogger(InputInterface $input, $label = '')
     {
         $logger = new Logger($this->getName());
+
         $labelFormat = (!empty($label)) ? $label . ' ' : '';
         $logFormatter = new LineFormatter("[$labelFormat%datetime%] %level_name%: %message%\n");
 
@@ -78,14 +86,17 @@ abstract class FlickrCliCommand extends Command
 
     /**
      * Load and check the configuration file and retrieve its contents.
+     *
      * @return string[][]
      * @throws Exception If there is a problem with the specified config file.
      */
     protected function getConfig(InputInterface $input)
     {
         $configFile = $this->getConfigFilepath($input);
+
         $logger = $this->getLogger($input);
         $logger->debug('Config file in use: ' . $configFile);
+
         $config = Yaml::parse($configFile);
         if (!isset($config)
             || !isset($config['flickr'])
@@ -94,11 +105,13 @@ abstract class FlickrCliCommand extends Command
         ) {
             throw new Exception('Config file must contain consumer key and secret.');
         }
+
         return $config;
     }
 
     /**
      * Get the relative filesystem path to the config.yml file.
+     *
      * @param InputInterface $input The input object from which to get the option value.
      * @param bool $requireExistence Require that the file exists (otherwise, throw an exception).
      * @return string The file path.
@@ -112,9 +125,11 @@ abstract class FlickrCliCommand extends Command
         } elseif ($envConfigFile = getenv('FLICKRCLI_CONFIG')) {
             $configFile = $envConfigFile;
         }
+
         if (!$this->fs->exists($configFile) && $requireExistence) {
             throw new Exception('Config file not found: ' . $configFile);
         }
+
         return $configFile;
     }
 }

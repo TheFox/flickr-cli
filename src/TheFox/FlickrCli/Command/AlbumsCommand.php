@@ -6,18 +6,11 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Yaml;
-
-// use OAuth\Common\Consumer\Credentials;
-// use OAuth\OAuth1\Signature\Signature;
-// use OAuth\Common\Storage\Memory;
 use Rezzza\Flickr\Metadata;
 use Rezzza\Flickr\ApiFactory;
 use Rezzza\Flickr\Http\GuzzleAdapter as RezzzaGuzzleAdapter;
-use Monolog\Logger;
-use Monolog\Formatter\LineFormatter;
 
 class AlbumsCommand extends Command
 {

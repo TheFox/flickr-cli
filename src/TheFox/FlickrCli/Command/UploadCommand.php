@@ -19,7 +19,6 @@ use Guzzle\Http\Client as GuzzleHttpClient;
 use Monolog\Logger;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
-// use Monolog\Handler\ErrorLogHandler;
 use Rych\ByteSize\ByteSize;
 use Carbon\Carbon;
 use TheFox\FlickrCli\FlickrCli;
@@ -78,6 +77,7 @@ class UploadCommand extends Command
 
         $this->addOption('config', 'c', InputOption::VALUE_OPTIONAL, 'Path to config file. Default: config.yml');
         $this->addOption('log', 'l', InputOption::VALUE_OPTIONAL, 'Path to log directory. Default: log');
+
         $this->addOption('description', 'd', InputOption::VALUE_OPTIONAL, 'Description for all uploaded files.');
         $csvTagsDesc = 'Comma separated names. For example: --tags=tag1,"Tag two"';
         $this->addOption('tags', 't', InputOption::VALUE_OPTIONAL, $csvTagsDesc);
@@ -204,7 +204,7 @@ class UploadCommand extends Command
         $uploadedDiffPrev = [0, 0, 0, 0, 0];
 
         $curlOptions[CURLOPT_PROGRESSFUNCTION] = function ($ch, $dlTotal = 0, $dlNow = 0, $ulTotal = 0, $ulNow = 0)
- use ($timePrev, $uploadedTotal, $uploadedPrev, $uploadedDiffPrev) {
+        use ($timePrev, $uploadedTotal, $uploadedPrev, $uploadedDiffPrev) {
 
             $uploadedDiff = $ulNow - $uploadedPrev;
             $uploadedPrev = $ulNow;
@@ -528,24 +528,28 @@ class UploadCommand extends Command
         return $this->exit;
     }
 
+    /**
+     * @todo
+     */
     private function signalHandlerSetup()
     {
         if (function_exists('pcntl_signal')) {
-            $this->logger->info('Setup Signal Handler');
-
-            declare(ticks=1);
-
-            $setup = pcntl_signal(SIGTERM, [$this, 'signalHandler']);
-            $this->logger->debug('Setup Signal Handler, SIGTERM: ' . ($setup ? 'OK' : 'FAILED'));
-
-            $setup = pcntl_signal(SIGINT, [$this, 'signalHandler']);
-            $this->logger->debug('Setup Signal Handler, SIGINT: ' . ($setup ? 'OK' : 'FAILED'));
-
-            $setup = pcntl_signal(SIGHUP, [$this, 'signalHandler']);
-            $this->logger->debug('Setup Signal Handler, SIGHUP: ' . ($setup ? 'OK' : 'FAILED'));
-        } else {
             $this->logger->warning('pcntl_signal() function not found for Signal Handler Setup');
+            return;
         }
+
+        $this->logger->info('Setup Signal Handler');
+
+        declare(ticks=1);
+
+        $setup = pcntl_signal(SIGTERM, [$this, 'signalHandler']);
+        $this->logger->debug('Setup Signal Handler, SIGTERM: ' . ($setup ? 'OK' : 'FAILED'));
+
+        $setup = pcntl_signal(SIGINT, [$this, 'signalHandler']);
+        $this->logger->debug('Setup Signal Handler, SIGINT: ' . ($setup ? 'OK' : 'FAILED'));
+
+        $setup = pcntl_signal(SIGHUP, [$this, 'signalHandler']);
+        $this->logger->debug('Setup Signal Handler, SIGHUP: ' . ($setup ? 'OK' : 'FAILED'));
     }
 
     /**

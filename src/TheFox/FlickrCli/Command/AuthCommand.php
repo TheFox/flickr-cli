@@ -20,13 +20,13 @@ use TheFox\OAuth\OAuth1\Service\Flickr;
 
 class AuthCommand extends FlickrCliCommand
 {
-
     /** @var SymfonyStyle */
     protected $io;
 
     protected function configure()
     {
         parent::configure();
+
         $this->setName('auth');
         $this->setDescription('Retrieve the Access Token for your Flickr application.');
 
