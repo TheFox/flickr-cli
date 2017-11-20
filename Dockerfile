@@ -26,6 +26,7 @@ RUN rm -r /root/.composer/* /root/.composer
 RUN ls -la /root
 
 # Use to store the config inside a volume.
+RUN mkdir /data && chmod 777 /data
 VOLUME /data
 
 VOLUME /mnt
