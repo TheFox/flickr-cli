@@ -61,13 +61,18 @@ To use this software within Docker follow this steps.
 
 2. Get the access token (it will create `config.yml` file in the volume).
 
-        docker run --rm -it -u $(id -u):$(id -g) -v "$PWD":/mnt -v flickrcli:/data thefox21/flickr-cli auth
+        docker run --rm -it -u $(id -u):$(id -g) -v "$PWD":/mnt -v flickrcli:/data thefox21/flickr-cli auth --config=/data/config.yml
+
+   or you can store the `config.yml` in your `$HOME/.flickr-cli` directory and use:
+
+        mkdir $HOME/.flickr-cli
+        docker run --rm -it -u $(id -u):$(id -g) -v "$PWD":/mnt -v "$HOME/.flickr-cli":/data thefox21/flickr-cli auth --config=/data/config.yml
 
 ### Usage
 
-Upload directory 2017.06.01-Spindleruv_mlyn full of JPEGs to Flickr:
+Upload directory `2017.06.01-Spindleruv_mlyn` full of JPEGs to Flickr:
 
-    docker run --rm -it -u $(id -u):$(id -g) -v "$PWD":/mnt -v flickrcli:/data thefox21/flickr-cli upload 2017.06.01-Spindleruv_mlyn --tags "2017.06.01 Spindleruv_mlyn" --sets "2017.06.01-Spindleruv_mlyn"
+    docker run --rm -it -u $(id -u):$(id -g) -v "$PWD":/mnt -v flickrcli:/data thefox21/flickr-cli upload --config=/data/config.yml --tags "2017.06.01 Spindleruv_mlyn" --sets "2017.06.01-Spindleruv_mlyn" 2017.06.01-Spindleruv_mlyn
 
 For Docker image troubleshooting you can use:
 
