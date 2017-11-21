@@ -141,6 +141,10 @@ abstract class FlickrCliCommand extends Command
         ;
     }
 
+    /**
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     */
     protected function setup(InputInterface $input, OutputInterface $output)
     {
         $this->input = $input;
@@ -203,6 +207,9 @@ abstract class FlickrCliCommand extends Command
         return $this->config;
     }
 
+    /**
+     * @param array|null $config
+     */
     public function saveConfig(array $config = null)
     {
         if ($config) {
@@ -220,25 +227,6 @@ abstract class FlickrCliCommand extends Command
         $filesystem->chmod($configFilePath, 0600);
         $filesystem->dumpFile($configFilePath, $configContent);
     }
-
-    /**
-     * Load and check the configuration file and retrieve its contents.
-     *
-     * @return string[][]
-     * @throws RuntimeException If there is a problem with the specified config file.
-     */
-    //protected function getConfig1(InputInterface $input)
-    //{
-    //    $configFile = $this->getConfigFilepath($input);
-    //
-    //    $logger = $this->getLogger($input);
-    //    $logger->debug(sprintf('Config file in use: %s', $configFile));
-    //
-    //
-
-    //
-    //    return $config;
-    //}
 
     /**
      * Get a new logger object, identified by the name of this command.

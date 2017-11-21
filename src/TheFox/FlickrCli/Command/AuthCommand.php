@@ -28,6 +28,9 @@ class AuthCommand extends FlickrCliCommand
      */
     protected $io;
 
+    /**
+     * @param null|string $name
+     */
     public function __construct($name = null)
     {
         parent::__construct($name);
@@ -49,6 +52,10 @@ class AuthCommand extends FlickrCliCommand
         $this->addOption('force', 'f', InputOption::VALUE_NONE, $msg);
     }
 
+    /**
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     */
     protected function setup(InputInterface $input, OutputInterface $output)
     {
         $this->setIsConfigFileRequired(false);
@@ -203,6 +210,7 @@ class AuthCommand extends FlickrCliCommand
 
     /**
      * Ask the user if they want to authenticate with read, write, or delete permissions.
+     *
      * @return string The permission, one of 'read', write', or 'delete'. Defaults to 'read'.
      */
     protected function getPermissionType(): string
