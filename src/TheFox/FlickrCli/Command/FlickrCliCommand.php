@@ -2,13 +2,17 @@
 
 namespace TheFox\FlickrCli\Command;
 
-use Exception;
+use Psr\Log\NullLogger;
+use RuntimeException;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\NullOutput;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Yaml;
 
@@ -18,18 +22,111 @@ use Symfony\Component\Yaml\Yaml;
 abstract class FlickrCliCommand extends Command
 {
     /**
-     * @var Filesystem
+     * @var LoggerInterface
      */
-    protected $fs;
+    private $logger;
 
     /**
-     * @param string|null $name The name of the command; passing null means it must be set in configure()
+     * @var InputInterface
+     */
+    private $input;
+
+    /**
+     * @var OutputInterface
+     */
+    private $output;
+
+    /**
+     * @var string
+     */
+    private $configFilePath;
+
+    /**
+     * @var bool
+     */
+    private $isConfigFileRequired;
+
+    /**
+     * @var string[][]
+     */
+    private $config;
+
+    /**
+     * FlickrCliCommand constructor.
+     * @param null|string $name
      */
     public function __construct($name = null)
     {
         parent::__construct($name);
 
-        $this->fs = new Filesystem();
+        $this->logger = new NullLogger();
+        $this->output = new NullOutput();
+        $this->configFilePath = 'config.yml';
+        $this->isConfigFileRequired = true;
+    }
+
+    /**
+     * @return LoggerInterface
+     */
+    public function getLogger(): LoggerInterface
+    {
+        return $this->logger;
+    }
+
+    /**
+     * @return InputInterface
+     */
+    public function getInput(): InputInterface
+    {
+        return $this->input;
+    }
+
+    /**
+     * @return OutputInterface
+     */
+    public function getOutput(): OutputInterface
+    {
+        return $this->output;
+    }
+
+    /**
+     * @return string
+     */
+    public function getConfigFilePath(): string
+    {
+        return $this->configFilePath;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isConfigFileRequired(): bool
+    {
+        return $this->isConfigFileRequired;
+    }
+
+    /**
+     * @param bool $isConfigFileRequired
+     */
+    public function setIsConfigFileRequired(bool $isConfigFileRequired)
+    {
+        $this->isConfigFileRequired = $isConfigFileRequired;
+    }
+
+    /**
+     * @return \string[][]
+     */
+    public function getConfig(): array
+    {
+        return $this->config;
+    }
+
+    /**
+     * @param \string[][] $config
+     */
+    public function setConfig(array $config)
+    {
+        $this->config = $config;
     }
 
     /**
@@ -38,13 +135,110 @@ abstract class FlickrCliCommand extends Command
      */
     protected function configure()
     {
-        parent::configure();
-
         $this
             ->addOption('config', 'c', InputOption::VALUE_OPTIONAL, 'Path to config file. Default: ./config.yml')
             ->addOption('log', 'l', InputOption::VALUE_OPTIONAL, 'Path to log directory. Default: ./log')
         ;
     }
+
+    protected function setup(InputInterface $input, OutputInterface $output)
+    {
+        $this->input = $input;
+        $this->output = $output;
+
+        $this->setupLogger();
+        $this->setupConfig();
+    }
+
+    private function setupLogger()
+    {
+        $this->logger = new Logger($this->getName());
+    }
+
+    private function setupConfig()
+    {
+        $input = $this->getInput();
+
+        if ($input->hasOption('config') && $input->getOption('config')) {
+            $configFilePath = $input->getOption('config');
+        } elseif ($envConfigFile = getenv('FLICKRCLI_CONFIG')) {
+            $configFilePath = $envConfigFile;
+        }
+
+        if (!isset($configFilePath) || !$configFilePath) {
+            throw new RuntimeException('No config file path found.');
+        }
+        $this->configFilePath = $configFilePath;
+
+        $filesystem = new Filesystem();
+        if (!$filesystem->exists($this->configFilePath) && $this->isConfigFileRequired()) {
+            throw new RuntimeException(sprintf('Config file not found: %s', $this->configFilePath));
+        }
+    }
+
+    /**
+     * @return \string[][]
+     */
+    public function loadConfig(): array
+    {
+        $configFilePath = $this->getConfigFilePath();
+        if (!$configFilePath) {
+            throw new RuntimeException('Config File Path is not set.');
+        }
+
+        $this->getLogger()->debug('Load configuration');
+
+        /** @var string[][] $config */
+        $config = Yaml::parse($configFilePath);
+
+        if (!isset($config)
+            || !isset($config['flickr'])
+            || !isset($config['flickr']['consumer_key'])
+            || !isset($config['flickr']['consumer_secret'])
+        ) {
+            throw new RuntimeException('Invalid configuration file.');
+        }
+
+        $this->config = $config;
+        return $this->config;
+    }
+
+    public function saveConfig(array $config = null)
+    {
+        if ($config) {
+            $this->setConfig($config);
+        } else {
+            $config = $this->getConfig();
+        }
+
+        $configContent = Yaml::dump($config);
+
+        $configFilePath = $this->getConfigFilePath();
+
+        $filesystem = new Filesystem();
+        $filesystem->touch($configFilePath);
+        $filesystem->chmod($configFilePath, 0600);
+        $filesystem->dumpFile($configFilePath, $configContent);
+    }
+
+    /**
+     * Load and check the configuration file and retrieve its contents.
+     *
+     * @return string[][]
+     * @throws RuntimeException If there is a problem with the specified config file.
+     */
+    //protected function getConfig1(InputInterface $input)
+    //{
+    //    $configFile = $this->getConfigFilepath($input);
+    //
+    //    $logger = $this->getLogger($input);
+    //    $logger->debug(sprintf('Config file in use: %s', $configFile));
+    //
+    //
+
+    //
+    //    return $config;
+    //}
 
     /**
      * Get a new logger object, identified by the name of this command.
@@ -53,83 +247,33 @@ abstract class FlickrCliCommand extends Command
      * @param string $label The label to identify which logger this is.
      * @return Logger
      */
-    protected function getLogger(InputInterface $input, $label = '')
-    {
-        $logger = new Logger($this->getName());
+    //protected function getLogger1(InputInterface $input, $label = '')
+    //{
+    //    $labelFormat = (!empty($label)) ? $label . ' ' : '';
+    //    $logFormatter = new LineFormatter("[$labelFormat%datetime%] %level_name%: %message%\n");
+    //
+    //    // @TODO This should be set by a new CLI debug parameter.
+    //    $logLevel = Logger::DEBUG;
+    //
+    //    // Standard out.
+    //    $logHandlerStderr = new StreamHandler('php://stdout', $logLevel);
+    //    $logHandlerStderr->setFormatter($logFormatter);
+    //    $logger->pushHandler($logHandlerStderr);
+    //
+    //    // Log directory.
+    //    $logDir = 'log';
+    //    if ($input->hasOption('log') && $input->getOption('log')) {
+    //        $logDir = $input->getOption('log');
+    //    }
+    //
+    //    // Log file.
+    //    $labelPart = (!empty($label)) ? $label . '_' : '';
+    //    $logFile = $logDir . '/' . $this->getName() . '_' . $labelPart . date('Y-m-d') . '.log';
+    //    $logHandlerFile = new StreamHandler($logFile, $logLevel);
+    //    $logHandlerFile->setFormatter($logFormatter);
+    //    $logger->pushHandler($logHandlerFile);
+    //
+    //    return $logger;
+    //}
 
-        $labelFormat = (!empty($label)) ? $label . ' ' : '';
-        $logFormatter = new LineFormatter("[$labelFormat%datetime%] %level_name%: %message%\n");
-
-        // @TODO This should be set by a new CLI debug parameter.
-        $logLevel = Logger::DEBUG;
-
-        // Standard out.
-        $logHandlerStderr = new StreamHandler('php://stdout', $logLevel);
-        $logHandlerStderr->setFormatter($logFormatter);
-        $logger->pushHandler($logHandlerStderr);
-
-        // Log directory.
-        $logDir = 'log';
-        if ($input->hasOption('log') && $input->getOption('log')) {
-            $logDir = $input->getOption('log');
-        }
-
-        // Log file.
-        $labelPart = (!empty($label)) ? $label . '_' : '';
-        $logFile = $logDir . '/' . $this->getName() . '_' . $labelPart . date('Y-m-d') . '.log';
-        $logHandlerFile = new StreamHandler($logFile, $logLevel);
-        $logHandlerFile->setFormatter($logFormatter);
-        $logger->pushHandler($logHandlerFile);
-
-        return $logger;
-    }
-
-    /**
-     * Load and check the configuration file and retrieve its contents.
-     *
-     * @return string[][]
-     * @throws Exception If there is a problem with the specified config file.
-     */
-    protected function getConfig(InputInterface $input)
-    {
-        $configFile = $this->getConfigFilepath($input);
-
-        $logger = $this->getLogger($input);
-        $logger->debug('Config file in use: ' . $configFile);
-
-        $config = Yaml::parse($configFile);
-        if (!isset($config)
-            || !isset($config['flickr'])
-            || !isset($config['flickr']['consumer_key'])
-            || !isset($config['flickr']['consumer_secret'])
-        ) {
-            throw new Exception('Config file must contain consumer key and secret.');
-        }
-
-        return $config;
-    }
-
-    /**
-     * Get the relative filesystem path to the config.yml file.
-     *
-     * @param InputInterface $input The input object from which to get the option value.
-     * @param bool $requireExistence Require that the file exists (otherwise, throw an exception).
-     * @return string The file path.
-     * @throws Exception If the file doesn't exist.
-     */
-    protected function getConfigFilepath(InputInterface $input, $requireExistence = true)
-    {
-        $configFile = 'config.yml';
-        if ($input->hasOption('config') && $input->getOption('config')) {
-            $configFile = $input->getOption('config');
-        } elseif ($envConfigFile = getenv('FLICKRCLI_CONFIG')) {
-            $configFile = $envConfigFile;
-        }
-
-        if (!$this->fs->exists($configFile) && $requireExistence) {
-            throw new Exception('Config file not found: ' . $configFile);
-        }
-
-        return $configFile;
-    }
 }
