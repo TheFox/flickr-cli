@@ -26,36 +26,43 @@ use TheFox\FlickrCli\FlickrCli;
 class UploadCommand extends Command
 {
     /**
+     * @deprecated
      * @var int
      */
     public $exit = 0;
 
     /**
+     * @deprecated
      * @var string
      */
     private $configPath;
 
     /**
+     * @deprecated
      * @var string
      */
     private $configRealPath;
 
     /**
+     * @deprecated
      * @var string
      */
     private $logDirPath;
 
     /**
+     * @deprecated
      * @var Logger
      */
     private $logger;
 
     /**
+     * @deprecated
      * @var Logger
      */
     private $loggerFilesSuccessful;
 
     /**
+     * @deprecated
      * @var Logger
      */
     private $loggerFilesFailed;
@@ -529,7 +536,7 @@ class UploadCommand extends Command
     }
 
     /**
-     * @todo
+     * @deprecated
      */
     private function signalHandlerSetup()
     {
@@ -553,6 +560,7 @@ class UploadCommand extends Command
     }
 
     /**
+     * @deprecated
      * @param int $signal
      */
     private function signalHandler(int $signal)

@@ -15,11 +15,13 @@ use Rezzza\Flickr\Http\GuzzleAdapter as RezzzaGuzzleAdapter;
 class AlbumsCommand extends Command
 {
     /**
+     * @deprecated
      * @var int
      */
     public $exit = 0;
 
     /**
+     * @deprecated
      * @var string The name of the configuration file. Defaults to 'config.yml'.
      */
     private $configPath;
@@ -90,6 +92,9 @@ class AlbumsCommand extends Command
         return 0;
     }
 
+    /**
+     * @deprecated
+     */
     private function signalHandlerSetup()
     {
         if (function_exists('pcntl_signal')) {
@@ -102,6 +107,7 @@ class AlbumsCommand extends Command
     }
 
     /**
+     * @deprecated
      * @param int $signal
      */
     private function signalHandler(int $signal)

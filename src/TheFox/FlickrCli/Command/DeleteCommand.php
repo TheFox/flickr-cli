@@ -22,26 +22,31 @@ use Carbon\Carbon;
 class DeleteCommand extends Command
 {
     /**
+     * @deprecated
      * @var int
      */
     public $exit = 0;
 
     /**
+     * @deprecated
      * @var string The name of the configuration file. Defaults to 'config.yml'.
      */
     private $configPath;
 
     /**
+     * @deprecated
      * @var string
      */
     private $logDirPath;
 
     /**
+     * @deprecated
      * @var Logger
      */
     private $logger;
 
     /**
+     * @deprecated
      * @var Logger
      */
     private $loggerFilesFailed;
@@ -198,6 +203,9 @@ class DeleteCommand extends Command
         return 0;
     }
 
+    /**
+     * @deprecated
+     */
     private function signalHandlerSetup()
     {
         if (function_exists('pcntl_signal')) {
@@ -210,6 +218,7 @@ class DeleteCommand extends Command
     }
 
     /**
+     * @deprecated
      * @param int $signal
      */
     private function signalHandler(int $signal)

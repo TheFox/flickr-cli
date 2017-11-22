@@ -154,6 +154,9 @@ abstract class FlickrCliCommand extends Command
         $this->setupConfig();
     }
 
+    /**
+     * @todo
+     */
     private function setupLogger()
     {
         $this->logger = new Logger($this->getName());

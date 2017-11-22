@@ -23,6 +23,7 @@ use TheFox\FlickrCli\FlickrCli;
 class DownloadCommand extends FlickrCliCommand
 {
     /**
+     * @deprecated
      * @var int
      */
     public $exit = 0;
@@ -33,11 +34,13 @@ class DownloadCommand extends FlickrCliCommand
     protected $dstDirPath;
 
     /**
+     * @deprecated
      * @var Logger General logger.
      */
     protected $logger;
 
     /**
+     * @deprecated
      * @var Logger Log for information about failed downloads.
      */
     protected $loggerFilesFailed;
@@ -632,6 +635,9 @@ class DownloadCommand extends FlickrCliCommand
         file_put_contents($destinationPath . '/metadata.yml', Yaml::dump($metadata));
     }
 
+    /**
+     * @deprecated
+     */
     private function signalHandlerSetup()
     {
         if (function_exists('pcntl_signal')) {
@@ -653,6 +659,7 @@ class DownloadCommand extends FlickrCliCommand
     }
 
     /**
+     * @deprecated
      * @param int $signal
      */
     private function signalHandler(int $signal)
