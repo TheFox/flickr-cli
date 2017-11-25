@@ -301,7 +301,7 @@ abstract class FlickrCliCommand extends Command
         $filesystem->dumpFile($configFilePath, $configContent);
     }
 
-    public function setupServices()
+    private function setupServices()
     {
         $config = $this->getConfig();
         $consumerKey = $config['flickr']['consumer_key'];
@@ -313,7 +313,7 @@ abstract class FlickrCliCommand extends Command
         $this->apiService->setLogger($this->logger);
     }
 
-    public function signalHandlerSetup()
+    private function signalHandlerSetup()
     {
         if (!function_exists('pcntl_signal') || !function_exists('pcntl_signal_dispatch')) {
             throw new SignalException('pcntl_signal function not found. You need to install pcntl PHP extention.');
@@ -332,7 +332,7 @@ abstract class FlickrCliCommand extends Command
     /**
      * @param int $signal
      */
-    public function signalHandler(int $signal)
+    private function signalHandler(int $signal)
     {
         $this->exit++;
 
