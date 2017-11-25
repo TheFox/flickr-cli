@@ -609,6 +609,10 @@ class DownloadCommand extends FlickrCliCommand
         $filesystem->dumpFile(sprintf('%s/metadata.yml', $destinationPath), $content);
     }
 
+    /**
+     * @param ApiFactory $apiFactory
+     * @return \Closure
+     */
     private function getMappingFunction(ApiFactory $apiFactory)
     {
         /**

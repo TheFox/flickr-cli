@@ -3,14 +3,10 @@
 namespace TheFox\FlickrCli\Command;
 
 use Psr\Log\NullLogger;
-use Rezzza\Flickr\ApiFactory;
-use Rezzza\Flickr\Metadata;
 use RuntimeException;
-use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Psr\Log\LoggerInterface;
-use SimpleXMLElement;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -146,7 +142,7 @@ abstract class FlickrCliCommand extends Command
     }
 
     /**
-     * @return \string[][]
+     * @return array
      */
     public function getConfig(): array
     {
@@ -154,7 +150,7 @@ abstract class FlickrCliCommand extends Command
     }
 
     /**
-     * @param \string[][] $config
+     * @param array $config
      */
     public function setConfig(array $config)
     {
@@ -254,7 +250,7 @@ abstract class FlickrCliCommand extends Command
     }
 
     /**
-     * @return \string[][]
+     * @return array
      */
     public function loadConfig(): array
     {
@@ -341,6 +337,11 @@ abstract class FlickrCliCommand extends Command
         }
     }
 
+    /**
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return int
+     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->setup($input, $output);

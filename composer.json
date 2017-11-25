@@ -29,7 +29,6 @@
         "guzzlehttp/guzzle": "^3.8",
         "lusitanian/oauth": "^0.2",
         "rych/bytesize": "^1.0",
-        "nesbot/carbon": "^1.21",
         "doctrine/dbal": "^2.5"
     },
     "require-dev": {

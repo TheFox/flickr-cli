@@ -5,79 +5,20 @@ namespace TheFox\FlickrCli\Command;
 use Exception;
 use SimpleXMLElement;
 use SplFileInfo;
-use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
-use Symfony\Component\Yaml\Yaml;
 use Symfony\Component\Finder\Finder;
-use Rezzza\Flickr\Metadata;
 use Rezzza\Flickr\ApiFactory;
 use Rezzza\Flickr\Http\GuzzleAdapter as RezzzaGuzzleAdapter;
 use Guzzle\Http\Client as GuzzleHttpClient;
-use Monolog\Logger;
-use Monolog\Formatter\LineFormatter;
-use Monolog\Handler\StreamHandler;
 use Rych\ByteSize\ByteSize;
-use Carbon\Carbon;
 use TheFox\FlickrCli\FlickrCli;
 
 class UploadCommand extends FlickrCliCommand
 {
-    /**
-     * @deprecated
-     * @var int
-     */
-    public $OLDExit = 0;
-
-    /**
-     * @deprecated
-     * @var string
-     */
-    private $configPath;
-
-    /**
-     * @deprecated
-     * @var string
-     */
-    private $configRealPath;
-
-    /**
-     * @deprecated
-     * @var string
-     */
-    private $logDirPath;
-
-    /**
-     * @deprecated
-     * @var Logger
-     */
-    private $logger;
-
-    /**
-     * @deprecated
-     * @var Logger
-     */
-    private $loggerFilesSuccessful;
-
-    /**
-     * @deprecated
-     * @var Logger
-     */
-    private $loggerFilesFailed;
-
-    /**
-     * @var int
-     */
-    private $uploadFileSize;
-
-    /**
-     * @var int
-     */
-    private $uploadFileSizeLen;
-
     protected function configure()
     {
         parent::configure();
@@ -109,9 +50,7 @@ class UploadCommand extends FlickrCliCommand
     {
         parent::execute($input, $output);
 
-        $this->getLogger()->info('start');
-        //$this->loggerFilesSuccessful->info('start');
-        //$this->loggerFilesFailed->info('start');
+        $apiService = $this->getApiService();
 
         if ($input->hasOption('description') && $input->getOption('description')) {
             $description = $input->getOption('description');
@@ -151,8 +90,8 @@ class UploadCommand extends FlickrCliCommand
         use ($timePrev, $uploadedTotal, $uploadedPrev, $uploadedDiffPrev) {
 
             $uploadedDiff = $ulNow - $uploadedPrev;
-            //$uploadedPrev = $ulNow;
-            //$uploadedTotal += $uploadedDiff;
+            $uploadedPrev = $ulNow;
+            $uploadedTotal += $uploadedDiff;
 
             $percent = 0;
             if ($ulTotal) {
@@ -196,17 +135,20 @@ class UploadCommand extends FlickrCliCommand
         $guzzleAdapterClientConfig->set(GuzzleHttpClient::CURL_OPTIONS, $curlOptions);
 
         //$apiFactory = new ApiFactory($metadata, $guzzleAdapter);
-        //$apiFactoryVerbose = new ApiFactory($metadata, $guzzleAdapterVerbose);
+        $apiFactory = $apiService->getApiFactory();
+        $metadata = $apiFactory->getMetadata();
+        $apiFactoryVerbose = new ApiFactory($metadata, $guzzleAdapterVerbose);
 
-        $photosetNames = [];
         if ($input->getOption('sets')) {
             $photosetNames = preg_split('/,/', $input->getOption('sets'));
+        } else {
+            $photosetNames = [];
         }
 
         $photosetAll = [];
         $photosetAllLower = [];
 
-        $apiFactory = $this->getApiService()->getApiFactory();
+        $apiFactory = $apiService->getApiFactory();
         $xml = $apiFactory->call('flickr.photosets.getList');
 
         /**
@@ -249,15 +191,16 @@ class UploadCommand extends FlickrCliCommand
         // Move files after they've been successfully uploaded?
         $configUploadedBaseDir = false;
         $move = $input->getOption('move');
-        if (null!==$move) {
-            $configPathDirname = realpath(dirname($this->configRealPath));
-            $configUploadedBaseDir = $configPathDirname . '/' . $move;
+        if (null !== $move) {
+            $configUploadedBaseDir = dirname($move);
+
+            $filesystem = new Filesystem();
             // Make the local directory if it doesn't exist.
             if (!$filesystem->exists($configUploadedBaseDir)) {
-                $filesystem->mkdir($configUploadedBaseDir);
-                $this->getLogger()->info('Created directory: ' . $configUploadedBaseDir);
+                $filesystem->mkdir($configUploadedBaseDir, 0755);
+                $this->getLogger()->info(sprintf('Created directory: %s', $configUploadedBaseDir));
             }
-            $this->getLogger()->info('Uploaded files will be moved to: ' . $configUploadedBaseDir);
+            $this->getLogger()->info(sprintf('Uploaded files will be moved to: %s', $configUploadedBaseDir));
         }
 
         $totalFiles = 0;
@@ -281,16 +224,18 @@ class UploadCommand extends FlickrCliCommand
 
         $directories = $input->getArgument('directory');
         foreach ($directories as $argDir) {
-            //$srcDir = new SplFileInfo($argDir);
-
-            $uploadBaseDirPath = '';
             if ($configUploadedBaseDir) {
-                $uploadBaseDirPath = $configUploadedBaseDir . '/' . str_replace('/', '_', $argDir);
+                $argDirReplaced = str_replace('/', '_', $argDir);
+                $uploadBaseDirPath = sprintf('%s/%s', $configUploadedBaseDir, $argDirReplaced);
+            } else {
+                $uploadBaseDirPath = '';
             }
 
-            $this->getLogger()->info('[dir] upload dir: ' . $argDir . ' ' . $uploadBaseDirPath);
+            $this->getLogger()->info(sprintf('[dir] upload dir: %s %s', $argDir, $uploadBaseDirPath));
 
-            foreach ($finder->in($argDir) as $file) {
+            /** @var \Symfony\Component\Finder\SplFileInfo[] $files */
+            $files = iterator_to_array($finder->in($argDir));
+            foreach ($files as $file) {
                 pcntl_signal_dispatch();
                 if ($this->getExit()) {
                     break;
@@ -303,15 +248,17 @@ class UploadCommand extends FlickrCliCommand
                 $fileRelativePathStr = (string)$fileRelativePath;
                 $dirRelativePath = $fileRelativePath->getPath();
 
-                $this->uploadFileSize = filesize($filePath);
-                $this->uploadFileSizeLen = strlen(number_format($this->uploadFileSize));
+                $uploadFileSize = filesize($filePath);
+                //$uploadFileSizeLen = strlen(number_format($uploadFileSize));
+                $uploadFileSizeFormatted = $bytesize->format($uploadFileSize);
 
                 $uploadDirPath = '';
                 if ($uploadBaseDirPath) {
-                    $uploadDirPath = $uploadBaseDirPath . '/' . $dirRelativePath;
+                    $uploadDirPath = sprintf('%s/%s', $uploadBaseDirPath, $dirRelativePath);
 
+                    $filesystem = new Filesystem();
                     if (!$filesystem->exists($uploadDirPath)) {
-                        $this->getLogger()->info("[dir] create '" . $uploadDirPath . "'");
+                        $this->getLogger()->info(sprintf('[dir] create "%s"', $uploadDirPath));
                         $filesystem->mkdir($uploadDirPath);
                     }
                 }
@@ -321,8 +268,7 @@ class UploadCommand extends FlickrCliCommand
                 if (!in_array(strtolower($fileExt), FlickrCli::ACCEPTED_EXTENTIONS)) {
                     $fileErrors++;
                     $filesFailed[] = $fileRelativePathStr;
-                    $this->getLogger()->error('[file] invalid extension: ' . $fileRelativePathStr);
-                    //$this->loggerFilesFailed->error($fileRelativePathStr);
+                    $this->getLogger()->warning(sprintf('[file] invalid extension: %s', $fileRelativePathStr));
 
                     continue;
                 }
@@ -332,54 +278,47 @@ class UploadCommand extends FlickrCliCommand
                         "[file] dry upload '%s' '%s' %s",
                         $fileRelativePathStr,
                         $dirRelativePath,
-                        $bytesize->format($this->uploadFileSize)
+                        $uploadFileSizeFormatted
                     ))
                     ;
                     continue;
                 }
 
-                $this->getLogger()->info("[file] upload '"
-                    . $fileRelativePathStr . "'  " . $bytesize->format($this->uploadFileSize))
-                ;
-                $xml = null;
+                $this->getLogger()->info(sprintf('[file] upload "%s" %s', $fileRelativePathStr, $uploadFileSizeFormatted));
                 try {
                     $xml = $apiFactoryVerbose->upload($filePath, $fileName, $description, $tags);
 
-                    // print "\r\x1b[0K";
                     print "\n";
                 } catch (Exception $e) {
-                    $this->getLogger()->error('[file] upload: ' . $e->getMessage());
+                    $this->getLogger()->error(sprintf('[file] upload: %s', $e->getMessage()));
                     $xml = null;
                 }
 
-                $photoId = 0;
-                $stat = '';
-                $successful = false;
                 if ($xml) {
                     $photoId = isset($xml->photoid) ? (int)$xml->photoid : 0;
                     $stat = isset($xml->attributes()->stat) ? strtolower((string)$xml->attributes()->stat) : '';
                     $successful = $stat == 'ok' && $photoId != 0;
+                } else {
+                    $photoId = 0;
+                    $successful = false;
                 }
 
-                $logLine = '';
                 if ($successful) {
                     $logLine = 'OK';
                     $totalFilesUploaded++;
 
-                    $this->loggerFilesSuccessful->info($fileRelativePathStr);
-
                     if ($uploadDirPath) {
-                        $this->getLogger()->info('[file] move to uploaded dir: ' . $uploadDirPath);
-                        $filesystem->rename($filePath, $uploadDirPath . '/' . $fileName);
+                        $this->getLogger()->info(sprintf('[file] move to uploaded dir: %s', $uploadDirPath));
+
+                        $filesystem = new Filesystem();
+                        $filesystem->rename($filePath, sprintf('%s/%s', $uploadDirPath, $fileName));
                     }
                 } else {
                     $logLine = 'FAILED';
                     $fileErrors++;
                     $filesFailed[] = $fileRelativePathStr;
-
-                    $this->loggerFilesFailed->error($fileRelativePathStr);
                 }
-                $this->getLogger()->info('[file] status: ' . $logLine . ' - ID ' . $photoId);
+                $this->getLogger()->info(sprintf('[file] status: %s - ID %s', $logLine, $photoId));
 
                 if (!$successful) {
                     continue;
@@ -387,7 +326,7 @@ class UploadCommand extends FlickrCliCommand
 
                 if ($photosetsNew) {
                     foreach ($photosetsNew as $photosetTitle) {
-                        $this->getLogger()->info('[photoset] create ' . $photosetTitle . ' ... ');
+                        $this->getLogger()->info(sprintf('[photoset] create %s ... ', $photosetTitle));
 
                         $xml = null;
                         try {
@@ -396,25 +335,18 @@ class UploadCommand extends FlickrCliCommand
                                 'primary_photo_id' => $photoId,
                             ]);
                         } catch (Exception $e) {
-                            $this->getLogger()->critical(
-                                '[photoset] create ' . $photosetTitle . ' FAILED: ' . $e->getMessage()
-                            )
-                            ;
+                            $this->getLogger()->critical(sprintf('[photoset] create %s FAILED: %s', $photosetTitle, $e->getMessage()));
                             return 1;
                         }
-                        if ($xml) {
-                            if ((string)$xml->attributes()->stat == 'ok') {
-                                $photosetId = (int)$xml->photoset->attributes()->id;
-                                $photosets[] = $photosetId;
 
-                                $this->getLogger()->info('[photoset] create ' . $photosetTitle . ' OK - ID ' . $photosetId);
-                            } else {
-                                $code = (int)$xml->err->attributes()->code;
-                                $this->getLogger()->critical('[photoset] create ' . $photosetTitle . ' FAILED: ' . $code);
-                                return 1;
-                            }
+                        if ((string)$xml->attributes()->stat == 'ok') {
+                            $photosetId = (int)$xml->photoset->attributes()->id;
+                            $photosets[] = $photosetId;
+
+                            $this->getLogger()->info(sprintf('[photoset] create %s OK - ID %s', $photosetTitle, $photosetId));
                         } else {
-                            $this->getLogger()->critical('[photoset] create ' . $photosetTitle . ' FAILED');
+                            $code = (int)$xml->err->attributes()->code;
+                            $this->getLogger()->critical(sprintf('[photoset] create %s FAILED: %s', $photosetTitle, $code));
                             return 1;
                         }
                     }
@@ -428,53 +360,51 @@ class UploadCommand extends FlickrCliCommand
                     foreach ($photosets as $photosetId) {
                         $logLine[] = substr($photosetId, -5);
 
-                        $xml = null;
                         try {
                             $xml = $apiFactory->call('flickr.photosets.addPhoto', [
                                 'photoset_id' => $photosetId,
                                 'photo_id' => $photoId,
                             ]);
                         } catch (Exception $e) {
-                            $this->getLogger()->critical(sprintf('[file] add to sets FAILED: %s' ,$e->getMessage()));
+                            $this->getLogger()->critical(sprintf('[file] add to sets FAILED: %s', $e->getMessage()));
                             return 1;
                         }
-                        if ($xml) {
-                            if ($xml->attributes()->stat == 'ok') {
-                                $logLine[] = 'OK';
-                            } else {
-                                if (isset($xml->err)) {
-                                    $code = (int)$xml->err->attributes()->code;
-                                    if ($code == 3) {
-                                        $logLine[] = 'OK';
-                                    } else {
-                                        $this->getLogger()->critical(sprintf('[file] add to sets FAILED: %d',$code));
-                                        return 1;
-                                    }
+
+                        if ($xml->attributes()->stat == 'ok') {
+                            $logLine[] = 'OK';
+                        } else {
+                            if (isset($xml->err)) {
+                                $code = (int)$xml->err->attributes()->code;
+                                if ($code == 3) {
+                                    $logLine[] = 'OK';
                                 } else {
-                                    $this->getLogger()->critical('[file] add to sets FAILED');
+                                    $this->getLogger()->critical(sprintf('[file] add to sets FAILED: %d', $code));
                                     return 1;
                                 }
+                            } else {
+                                $this->getLogger()->critical('[file] add to sets FAILED');
+                                return 1;
                             }
                         }
                     }
 
-                    $this->getLogger()->info(sprintf('[file] added to sets: %s' , join(' ',$logLine)));
+                    $this->getLogger()->info(sprintf('[file] added to sets: %s', join(' ', $logLine)));
                 }
             }
         }
 
-        if($uploadedTotal > 0)
-            $uploadedTotalStr=$bytesize->format($uploadedTotal);
-        else $uploadedTotalStr=0;
+        if ($uploadedTotal > 0) {
+            $uploadedTotalStr = $bytesize->format($uploadedTotal);
+        } else {
+            $uploadedTotalStr = 0;
+        }
 
-        $this->getLogger()->info(sprintf('[main] total uploaded: %s' , $uploadedTotalStr));
-        $this->getLogger()->info(sprintf('[main] total files:    %d' ,$totalFiles) );
-        $this->getLogger()->info(sprintf('[main] files uploaded: %d' , $totalFilesUploaded));
+        $this->getLogger()->notice(sprintf('[main] total uploaded: %s', $uploadedTotalStr));
+        $this->getLogger()->notice(sprintf('[main] total files:    %d', $totalFiles));
+        $this->getLogger()->notice(sprintf('[main] files uploaded: %d', $totalFilesUploaded));
 
         $filesFailedMsg = count($filesFailed) ? "\n" . join("\n", $filesFailed) : '';
-        $this->getLogger()->info(sprintf('[main] files failed:   %s%s' , $fileErrors , $filesFailedMsg));
-
-        $this->getLogger()->info('exit');
+        $this->getLogger()->notice(sprintf('[main] files failed:   %s%s', $fileErrors, $filesFailedMsg));
 
         return $this->getExit();
     }
