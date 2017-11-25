@@ -13,35 +13,35 @@ A command-line interface to [Flickr](https://www.flickr.com/). Upload and downlo
 		composer install
 
 3. Go to <https://www.flickr.com/services/apps/create/apply/> to create a new API key.
-The first time you run `./application.php auth` you'll be prompted to enter your new consumer key and secret.
+The first time you run `./bin/flickr-cli auth` you'll be prompted to enter your new consumer key and secret.
 
 ## Usage
 
 First, get the access token:
 
-	./application.php auth
+	./bin/flickr-cli auth
 
 ### Upload
 
-	./application.php upload [-d DESCRIPTION] [-t TAG,...] [-s SET,...] DIRECTORY...
+	./bin/flickr-cli upload [-d DESCRIPTION] [-t TAG,...] [-s SET,...] DIRECTORY...
 
 ### Download
 
-	./application.php download -d DIRECTORY [SET...]
+	./bin/flickr-cli download -d DIRECTORY [SET...]
 
 To download all photosets to directory `photosets`:
 
-	./application.php download -d photosets
+	./bin/flickr-cli download -d photosets
 
 Or to download only the photoset *Holiday 2013*:
 
-	./application.php download -d photosets 'Holiday 2013'
+	./bin/flickr-cli download -d photosets 'Holiday 2013'
 
 To download all photos into directories named by photo ID
 (and so which will not change when you rename albums or photos; perfect for a complete Flickr backup)
 you can use the `--id-dirs` option:
 
-	./application.php download -d flickr_backup --id-dirs
+	./bin/flickr-cli download -d flickr_backup --id-dirs
 
 This creates a stable directory structure of the form `destination_dir/hash/hash/photo-ID/`
 and saves the full original photo file along with a `metadata.yml` file containing all photo metadata.

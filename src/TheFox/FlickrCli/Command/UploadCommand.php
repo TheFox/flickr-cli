@@ -86,8 +86,7 @@ class UploadCommand extends FlickrCliCommand
         $uploadedPrev = 0;
         $uploadedDiffPrev = [0, 0, 0, 0, 0];
 
-        $curlOptions[CURLOPT_PROGRESSFUNCTION] = function ($ch, $dlTotal = 0, $dlNow = 0, $ulTotal = 0, $ulNow = 0)
-        use ($timePrev, $uploadedTotal, $uploadedPrev, $uploadedDiffPrev) {
+        $curlOptions[CURLOPT_PROGRESSFUNCTION] = function ($ch, $dlTotal = 0, $dlNow = 0, $ulTotal = 0, $ulNow = 0) use ($timePrev, $uploadedTotal, $uploadedPrev, $uploadedDiffPrev) {
 
             $uploadedDiff = $ulNow - $uploadedPrev;
             $uploadedPrev = $ulNow;

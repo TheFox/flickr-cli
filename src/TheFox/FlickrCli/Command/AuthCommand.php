@@ -149,9 +149,10 @@ class AuthCommand extends FlickrCliCommand
     protected function authenticate(string $configPath, string $customerKey, string $customerSecret)
     {
         $storage = new Memory();
-        $credentials = new Credentials($customerKey, $customerSecret,
-            'oob' // Out-of-band, i.e. no callback required for a CLI application.
-        );
+
+        // Out-of-band, i.e. no callback required for a CLI application.
+        $credentials = new Credentials($customerKey, $customerSecret, 'oob');
+
         $streamClient = new GuzzleStreamClient();
         $signature = new Signature($credentials);
 

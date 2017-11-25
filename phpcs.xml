@@ -2,7 +2,7 @@
 <ruleset>
     <rule ref="PSR2"/>
 
-    <file>application.php</file>
+    <file>bin/flickr-cli</file>
     <file>src</file>
 
     <exclude-pattern>vendor/</exclude-pattern>

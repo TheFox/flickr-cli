@@ -32,4 +32,4 @@ VOLUME /data
 VOLUME /mnt
 WORKDIR /mnt
 
-ENTRYPOINT ["php", "/app/application.php"]
+ENTRYPOINT ["php", "/app/bin/flickr-cli"]
