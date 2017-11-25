@@ -9,4 +9,6 @@ before_script:
     - phpenv rehash
 script:
     - ./bin/phpstan.sh
+    - ./vendor/bin/phpcs --config-set ignore_warnings_on_exit 0
+    - ./vendor/bin/phpcs --config-show
     - ./vendor/bin/phpcs
