@@ -75,6 +75,7 @@ abstract class FlickrCliCommand extends Command
         $this->output = new NullOutput();
         $this->configFilePath = 'config.yml';
         $this->isConfigFileRequired = true;
+        $this->config = [];
     }
 
     /**
@@ -172,8 +173,7 @@ abstract class FlickrCliCommand extends Command
     protected function configure()
     {
         $this
-            ->addOption('config', 'c', InputOption::VALUE_OPTIONAL, 'Path to config file. Default: ./config.yml')
-            //->addOption('log', 'l', InputOption::VALUE_OPTIONAL, 'Path to log directory. Default: ./log')
+            ->addOption('config', 'c', InputOption::VALUE_OPTIONAL, 'Path to config file. Default: ./config.yml')//->addOption('log', 'l', InputOption::VALUE_OPTIONAL, 'Path to log directory. Default: ./log')
         ;
     }
 
@@ -190,7 +190,6 @@ abstract class FlickrCliCommand extends Command
         $this->setupLogger();
 
         $this->setupConfig();
-        $this->loadConfig();
 
         $this->setupServices();
     }
@@ -244,7 +243,9 @@ abstract class FlickrCliCommand extends Command
         $this->configFilePath = $configFilePath;
 
         $filesystem = new Filesystem();
-        if (!$filesystem->exists($this->configFilePath) && $this->isConfigFileRequired()) {
+        if ($filesystem->exists($this->configFilePath)) {
+            $this->loadConfig();
+        } elseif ($this->isConfigFileRequired()) {
             throw new RuntimeException(sprintf('Config file not found: %s', $this->configFilePath));
         }
     }
@@ -297,16 +298,44 @@ abstract class FlickrCliCommand extends Command
         $filesystem->dumpFile($configFilePath, $configContent);
     }
 
+    /**
+     * @return bool
+     */
     private function setupServices()
     {
         $config = $this->getConfig();
+        if (!$config) {
+            return false;
+        }
+
+        if (!array_key_exists('flickr', $config)) {
+            return false;
+        }
+
         $consumerKey = $config['flickr']['consumer_key'];
+        if (!$consumerKey) {
+            return false;
+        }
+
         $consumerSecret = $config['flickr']['consumer_secret'];
+        if (!$consumerSecret) {
+            return false;
+        }
+
         $token = $config['flickr']['token'];
+        if (!$token) {
+            return false;
+        }
+
         $tokenSecret = $config['flickr']['token_secret'];
+        if (!$tokenSecret) {
+            return false;
+        }
 
         $this->apiService = new ApiService($consumerKey, $consumerSecret, $token, $tokenSecret);
         $this->apiService->setLogger($this->logger);
+
+        return true;
     }
 
     private function signalHandlerSetup()

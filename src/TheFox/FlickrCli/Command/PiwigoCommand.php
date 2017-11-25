@@ -5,29 +5,47 @@ namespace TheFox\FlickrCli\Command;
 use Doctrine\DBAL\Configuration;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
-use Exception;
-use Rezzza\Flickr\ApiFactory;
-use Rezzza\Flickr\Http\GuzzleAdapter;
-use Rezzza\Flickr\Metadata;
-use Symfony\Component\Console\Command\Command;
+use RuntimeException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Yaml\Yaml;
 
-class PiwigoCommand extends Command
+class PiwigoCommand extends FlickrCliCommand
 {
-
-    /** @var string[] Array of photoset titles, keyed by their ID. */
+    /**
+     * Array of photoset titles, keyed by their ID.
+     *
+     * @var string[]
+     */
     protected $photosets;
+
+    /**
+     * @var Connection
+     */
+    private $connection;
+
+    /**
+     * @return Connection
+     */
+    public function getConnection(): Connection
+    {
+        return $this->connection;
+    }
+
+    /**
+     * @param Connection $connection
+     */
+    public function setConnection(Connection $connection)
+    {
+        $this->connection = $connection;
+    }
 
     protected function configure()
     {
+        parent::configure();
+
         $this->setName('piwigo');
         $this->setDescription('Upload files from Piwigo to Flickr');
-
-        $this->addOption('config', 'c', InputOption::VALUE_OPTIONAL, 'Path to config file; default: config.yml');
-        $this->addOption('log', 'l', InputOption::VALUE_OPTIONAL, 'Path to log directory; default: log');
 
         $this->addOption('piwigo-uploads', null, InputOption::VALUE_REQUIRED, "Path to the Piwigo 'uploads' directory");
     }
@@ -35,14 +53,38 @@ class PiwigoCommand extends Command
     /**
      * Executes the current command.
      *
-     * @param InputInterface  $input  An InputInterface instance
+     * @param InputInterface $input An InputInterface instance
      * @param OutputInterface $output An OutputInterface instance
      *
-     * @return null|int null or 0 if everything went fine, or an error code
+     * @return int
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $config = Yaml::parse('config.yml');
+        parent::execute($input, $output);
+
+        $this->checkPiwigoConfig();
+        $this->setupPiwigoConnection();
+
+        $count = $this->getConnection()->query('SELECT COUNT(*) AS count FROM images')->fetchColumn();
+        $output->writeln(sprintf('%s images found in the Piwigo database', number_format($count)));
+
+        $piwigoUploadsPath = $input->getOption('piwigo-uploads');
+
+        // Photos.
+        $images = $this->getConnection()->query('SELECT * FROM images')->fetchAll();
+        foreach ($images as $image) {
+            $this->processOne($image, $piwigoUploadsPath);
+        }
+
+        return $this->getExit();
+    }
+
+    /**
+     * @throws RuntimeException
+     */
+    private function checkPiwigoConfig()
+    {
+        $config = $this->getConfig();
 
         // Piwigo.
         if (!isset($config['piwigo'])
@@ -51,49 +93,38 @@ class PiwigoCommand extends Command
             || !isset($config['piwigo']['dbpass'])
             || !isset($config['piwigo']['dbhost'])
         ) {
-            $output->writeln(
-                "<error>Please set the all of the following options in the 'piwigo' section of config.yml:\n"
-                . "dbname, dbuser, dbpass, & dbhost.</error>"
-            );
-            return 1;
+            throw new RuntimeException('Please set the all of the following options in the \'piwigo\' section of config.yml: dbname, dbuser, dbpass, & dbhost.');
         }
+    }
+
+    private function setupPiwigoConnection()
+    {
+        $config = $this->getConfig();
+
         $dbConfig = new Configuration();
-        $connectionParams = array(
+        $connectionParams = [
             'dbname' => $config['piwigo']['dbname'],
             'user' => $config['piwigo']['dbuser'],
             'password' => $config['piwigo']['dbpass'],
             'host' => $config['piwigo']['dbhost'],
             'driver' => 'pdo_mysql',
-        );
+        ];
         $conn = DriverManager::getConnection($connectionParams, $dbConfig);
-        $count = $conn->query("SELECT COUNT(*) AS count FROM images")->fetchColumn();
-        $output->writeln(number_format($count)." images found in the Piwigo database");
-        $piwigoUploadsPath = $input->getOption('piwigo-uploads');
 
-        // Flickr.
-        $metadata = new Metadata($config['flickr']['consumer_key'], $config['flickr']['consumer_secret']);
-        $metadata->setOauthAccess($config['flickr']['token'], $config['flickr']['token_secret']);
-        $guzzleAdapterVerbose = new GuzzleAdapter();
-        $apiFactory = new ApiFactory($metadata, $guzzleAdapterVerbose);
-
-        // Photos.
-        $images = $conn->query("SELECT * FROM images")->fetchAll();
-        foreach ($images as $image) {
-            $this->processOne($image, $piwigoUploadsPath, $conn, $output, $apiFactory);
-        }
+        $this->setConnection($conn);
     }
 
-    protected function processOne(
-        $image,
-        $piwigoUploadsPath,
-        Connection $conn,
-        OutputInterface $output,
-        ApiFactory $apiFactory
-    ) {
+    /**
+     * @param $image
+     * @param $piwigoUploadsPath
+     * @throws RuntimeException
+     */
+    protected function processOne($image, $piwigoUploadsPath)
+    {
         // Check file.
-        $filePath = $piwigoUploadsPath.substr($image['path'], 9);
+        $filePath = $piwigoUploadsPath . substr($image['path'], 9);
         if (!file_exists($filePath)) {
-            throw new Exception("File not found: $filePath");
+            throw new RuntimeException(sprintf('File not found: %s', $filePath));
         }
 
         // Figure out the privacy level.
@@ -120,44 +151,50 @@ class PiwigoCommand extends Command
         }
 
         // Get tags (including a checksum machine tag).
-        $cats = $conn->prepare("SELECT t.name FROM image_tag it JOIN tags t ON it.tag_id=t.id WHERE it.image_id=:id");
+        $cats = $this->getConnection()->prepare('SELECT t.name FROM image_tag it JOIN tags t ON it.tag_id=t.id WHERE it.image_id=:id');
         $cats->bindValue('id', $image['id']);
         $cats->execute();
-        $md5sum = !empty($image['md5sum']) ? $image['md5sum'] : md5_file($filePath);
-        $tags = ['checksum:md5='.$md5sum];
+
+        if (empty($image['md5sum'])) {
+            $md5sum = md5_file($filePath);
+        } else {
+            $md5sum = $image['md5sum'];
+        }
+        $tags = [sprintf('checksum:md5=%s', $md5sum)];
         while ($cat = $cats->fetch()) {
             $tags[] = $cat['name'];
         }
 
         // Make sure it's not already on Flickr (by MD5 checksum only).
+        $apiFactory = $this->getApiService()->getApiFactory();
         $md5search = $apiFactory->call('flickr.photos.search', [
             'user_id' => 'me',
-            'tags' => "checksum:md5=$md5sum",
+            'tags' => sprintf('checksum:md5=%s', $md5sum),
         ]);
         if (((int)$md5search->photos['total']) > 0) {
-            $output->writeln('Already exists: '.$image['name']);
+            $this->getOutput()->writeln(sprintf('Already exists: %s', $image['name']));
             return;
         }
 
         // Upload to Flickr.
-        $output->write("Uploading: ".$image['name']);
+        $this->getOutput()->write(sprintf('Uploading: %s', $image['name']));
         $comment = $image['comment'];
         $xml = $apiFactory->upload($filePath, $image['name'], $comment, $tags, $isPublic, $isFriend, $isFamily);
         $photoId = isset($xml->photoid) ? (int)$xml->photoid : 0;
         $stat = isset($xml->attributes()->stat) ? strtolower((string)$xml->attributes()->stat) : '';
         $successful = $stat == 'ok' && $photoId != 0;
         if (!$successful) {
-            throw new Exception("Failed to upload $filePath to ".$image['name']);
+            throw new RuntimeException(sprintf('Failed to upload %s to %s', $filePath, $image['name']));
         }
 
         // Add to albums (categories, in Piwigo parlance).
-        $output->write(' [photosets]');
-        $sql = "SELECT c.name FROM image_category ic JOIN categories c ON ic.category_id=c.id WHERE ic.image_id=:id";
-        $cats = $conn->prepare($sql);
+        $this->getOutput()->write(' [photosets]');
+        $sql = 'SELECT c.name FROM image_category ic JOIN categories c ON ic.category_id=c.id WHERE ic.image_id=:id';
+        $cats = $this->getConnection()->prepare($sql);
         $cats->bindValue('id', $image['id']);
         $cats->execute();
         while ($cat = $cats->fetch()) {
-            $photosetId = $this->getPhotosetId($apiFactory, $cat['name'], $photoId, $output);
+            $photosetId = $this->getPhotosetId($cat['name'], $photoId);
             $apiFactory->call('flickr.photosets.addPhoto', [
                 'photoset_id' => $photosetId,
                 'photo_id' => $photoId,
@@ -165,7 +202,7 @@ class PiwigoCommand extends Command
         }
 
         // Add to an import photoset.
-        $importFromPiwigoId = $this->getPhotosetId($apiFactory, 'Imported from Piwigo', $photoId, $output);
+        $importFromPiwigoId = $this->getPhotosetId('Imported from Piwigo', $photoId);
         $apiFactory->call('flickr.photosets.addPhoto', [
             'photoset_id' => $importFromPiwigoId,
             'photo_id' => $photoId,
@@ -173,34 +210,39 @@ class PiwigoCommand extends Command
 
         // Set location on Flickr.
         if (!empty($image['latitude']) && !empty($image['longitude'])) {
-            $output->write(' [location]');
+            $this->getOutput()->write(' [location]');
             $apiFactory->call('flickr.photos.geo.setLocation', [
                 'photo_id' => $photoId,
                 'lat' => $image['latitude'],
                 'lon' => $image['longitude'],
             ]);
         } else {
-            $output->write(' [no location]');
+            $this->getOutput()->write(' [no location]');
         }
 
-        $output->writeln(' -- done');
+        $this->getOutput()->writeln(' -- done');
     }
 
     /**
      * Get a photoset's ID from a name, creating a new photo set if required.
      * Case insensitive.
-     * @param ApiFactory $apiFactory
+     *
      * @param string $photosetName
      * @param int $primaryPhotoId
-     * @param OutputInterface $output
      * @return int
      */
-    protected function getPhotosetId(ApiFactory $apiFactory, $photosetName, $primaryPhotoId, OutputInterface $output)
+    protected function getPhotosetId($photosetName, $primaryPhotoId)
     {
+        $apiFactory = $this->getApiService()->getApiFactory();
+
         // First get all existing albums (once only).
         if (!is_array($this->photosets)) {
             $this->photosets = [];
             $getList = $apiFactory->call('flickr.photosets.getList');
+            /**
+             * @var string $n
+             * @var \SimpleXMLElement $photoset
+             */
             foreach ($getList->photosets->photoset as $n => $photoset) {
                 $this->photosets[(int)$photoset->attributes()->id] = (string)$photoset->title;
             }
@@ -208,17 +250,19 @@ class PiwigoCommand extends Command
 
         // See if we've already got it.
         foreach ($this->photosets as $id => $name) {
-            if (mb_strtolower($photosetName) == mb_strtolower($name)) {
-                return (int)$id;
+            if (mb_strtolower($photosetName) != mb_strtolower($name)) {
+                continue;
             }
+
+            return (int)$id;
         }
 
         // Otherwise, create it.
-        $output->write(" [creating new photoset: $photosetName]");
-        $newPhotoset = $apiFactory->call('flickr.photosets.create', array(
+        $this->getOutput()->write(sprintf(' [creating new photoset: %s]', $photosetName));
+        $newPhotoset = $apiFactory->call('flickr.photosets.create', [
             'title' => $photosetName,
             'primary_photo_id' => $primaryPhotoId,
-        ));
+        ]);
         $newId = (int)$newPhotoset->photoset->attributes()->id;
         $this->photosets[$newId] = $photosetName;
         return $newId;
