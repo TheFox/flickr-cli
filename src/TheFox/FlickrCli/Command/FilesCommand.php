@@ -14,7 +14,7 @@ use Rezzza\Flickr\Metadata;
 use Rezzza\Flickr\ApiFactory;
 use Rezzza\Flickr\Http\GuzzleAdapter as RezzzaGuzzleAdapter;
 
-class FilesCommand extends Command
+class FilesCommand extends FlickrCliCommand
 {
     /**
      * @deprecated
@@ -22,22 +22,13 @@ class FilesCommand extends Command
      */
     public $exit = 0;
 
-    /**
-     * @deprecated
-     * @var string The name of the configuration file. Defaults to 'config.yml'.
-     */
-    private $configPath;
-
     protected function configure()
     {
         $this->setName('files');
         $this->setDescription('List Files.');
 
         $this->addOption('config', 'c', InputOption::VALUE_OPTIONAL, 'Path to config file. Default: config.yml');
-
         $this->addArgument('photosets', InputArgument::IS_ARRAY, 'Photosets to use.');
-
-        $this->configPath = 'config.yml';
     }
 
     /**
@@ -47,135 +38,62 @@ class FilesCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->signalHandlerSetup();
-
-        // Load and check the configuration file.
-        if ($input->hasOption('config') && $input->getOption('config')) {
-            $this->configPath = $input->getOption('config');
-        }
-        $filesystem = new Filesystem();
-        if (!$filesystem->exists($this->configPath)) {
-            print 'ERROR: config file not found: ' . $this->configPath . "\n";
-            return 1;
-        }
-        $config = Yaml::parse($this->configPath);
-        if (!isset($config)
-            || !isset($config['flickr'])
-            || !isset($config['flickr']['consumer_key'])
-            || !isset($config['flickr']['consumer_secret'])
-        ) {
-            print 'ERROR: config invalid' . "\n";
-            return 1;
-        }
+        parent::execute($input, $output);
 
         $photosets = $input->getArgument('photosets');
 
-        // Set up the Flickr API.
-        $metadata = new Metadata($config['flickr']['consumer_key'], $config['flickr']['consumer_secret']);
-        $metadata->setOauthAccess($config['flickr']['token'], $config['flickr']['token_secret']);
-        $apiFactory = new ApiFactory($metadata, new RezzzaGuzzleAdapter());
-        $xml = $apiFactory->call('flickr.photosets.getList');
+        $apiService = $this->getApiService();
+        $apiFactory = $apiService->getApiFactory();
 
-        $photosetsTitles = [];
-
-        /**
-         * @var int $n
-         * @var SimpleXMLElement $photoset
-         */
-        foreach ($xml->photosets->photoset as $n => $photoset) {
-            if ($this->exit) {
+        $photosetTitles = $apiService->getPhotosetTitles();
+        foreach ($photosetTitles as $photosetId => $photosetTitle) {
+            pcntl_signal_dispatch();
+            if ($this->getExit()) {
                 break;
             }
 
-            $photosetsTitles[(int)$photoset->attributes()->id] = (string)$photoset->title;
-        }
-
-        asort($photosetsTitles);
-
-        foreach ($photosetsTitles as $photosetId => $photosetTitle) {
-            if ($this->exit) {
-                break;
+            if (!in_array($photosetTitle, $photosets)) {
+                continue;
             }
 
-            if (in_array($photosetTitle, $photosets)) {
-                $xmlPhotoList = $apiFactory->call('flickr.photosets.getPhotos', ['photoset_id' => $photosetId]);
-                $xmlPhotoListPagesTotal = (int)$xmlPhotoList->photoset->attributes()->pages;
-                $xmlPhotoListPhotosTotal = (int)$xmlPhotoList->photoset->attributes()->total;
+            $xmlPhotoListOptions = ['photoset_id' => $photosetId];
+            $xmlPhotoList = $apiFactory->call('flickr.photosets.getPhotos', $xmlPhotoListOptions);
+            $xmlPhotoListPagesTotal = (int)$xmlPhotoList->photoset->attributes()->pages;
+            $xmlPhotoListPhotosTotal = (int)$xmlPhotoList->photoset->attributes()->total;
 
-                print $photosetTitle . ' (' . $xmlPhotoListPhotosTotal . ')' . "\n";
+            printf('%s (%d)' . "\n", $photosetTitle, $xmlPhotoListPhotosTotal);
 
-                $fileCount = 0;
+            $fileCount = 0;
 
-                for ($page = 1; $page <= $xmlPhotoListPagesTotal; $page++) {
-                    if ($this->exit) {
+            for ($page = 1; $page <= $xmlPhotoListPagesTotal; $page++) {
+                pcntl_signal_dispatch();
+                if ($this->getExit()) {
+                    break;
+                }
+
+                if ($page > 1) {
+                    $xmlPhotoListOptions['page'] = $page;
+                    $xmlPhotoList = $apiFactory->call('flickr.photosets.getPhotos', $xmlPhotoListOptions);
+                }
+
+                /**
+                 * @var int $n
+                 * @var SimpleXMLElement $photo
+                 */
+                foreach ($xmlPhotoList->photoset->photo as $n => $photo) {
+                    pcntl_signal_dispatch();
+                    if ($this->getExit()) {
                         break;
                     }
 
-                    if ($page > 1) {
-                        $xmlPhotoListOptions = [
-                            'photoset_id' => $photosetId,
-                            'page' => $page,
-                        ];
-                        $xmlPhotoList = $apiFactory->call('flickr.photosets.getPhotos', $xmlPhotoListOptions);
-                    }
+                    $id = (string)$photo->attributes()->id;
+                    $fileCount++;
 
-                    /**
-                     * @var int $n
-                     * @var SimpleXMLElement $photo
-                     */
-                    foreach ($xmlPhotoList->photoset->photo as $n => $photo) {
-                        if ($this->exit) {
-                            break;
-                        }
-
-                        $title = '';
-                        $originalFormat = '';
-                        $description = '';
-
-                        $id = (string)$photo->attributes()->id;
-                        $fileCount++;
-
-                        print '  ' . $page . '/' . $fileCount . ' ' . $id . "\n";
-                    }
+                    printf('  %d/%d %s' . "\n", $page, $fileCount, $id);
                 }
             }
         }
 
-        return 0;
-    }
-
-    /**
-     * @deprecated
-     */
-    private function signalHandlerSetup()
-    {
-        if (function_exists('pcntl_signal')) {
-            declare(ticks=1);
-
-            pcntl_signal(SIGTERM, [$this, 'signalHandler']);
-            pcntl_signal(SIGINT, [$this, 'signalHandler']);
-            pcntl_signal(SIGHUP, [$this, 'signalHandler']);
-        }
-    }
-
-    /**
-     * @deprecated
-     * @param int $signal
-     */
-    private function signalHandler(int $signal)
-    {
-        $this->exit++;
-
-        switch ($signal) {
-            case SIGINT:
-                print PHP_EOL;
-                break;
-
-            default:
-        }
-
-        if ($this->exit >= 2) {
-            exit(1);
-        }
+        return $this->getExit();
     }
 }

@@ -3,6 +3,7 @@
 namespace TheFox\FlickrCli\Command;
 
 use Exception;
+use SimpleXMLElement;
 use SplFileInfo;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -23,13 +24,13 @@ use Rych\ByteSize\ByteSize;
 use Carbon\Carbon;
 use TheFox\FlickrCli\FlickrCli;
 
-class UploadCommand extends Command
+class UploadCommand extends FlickrCliCommand
 {
     /**
      * @deprecated
      * @var int
      */
-    public $exit = 0;
+    public $OLDExit = 0;
 
     /**
      * @deprecated
@@ -79,11 +80,10 @@ class UploadCommand extends Command
 
     protected function configure()
     {
+        parent::configure();
+
         $this->setName('upload');
         $this->setDescription('Upload files to Flickr.');
-
-        $this->addOption('config', 'c', InputOption::VALUE_OPTIONAL, 'Path to config file. Default: config.yml');
-        $this->addOption('log', 'l', InputOption::VALUE_OPTIONAL, 'Path to log directory. Default: log');
 
         $this->addOption('description', 'd', InputOption::VALUE_OPTIONAL, 'Description for all uploaded files.');
         $csvTagsDesc = 'Comma separated names. For example: --tags=tag1,"Tag two"';
@@ -95,10 +95,6 @@ class UploadCommand extends Command
         $this->addOption('move', 'm', InputOption::VALUE_OPTIONAL, 'Move uploaded files to this directory.');
 
         $this->addArgument('directory', InputArgument::IS_ARRAY, 'Path to directories.');
-
-        $this->configPath = 'config.yml';
-        $this->configRealPath = 'config.yml';
-        $this->logDirPath = 'log';
     }
 
     /**
@@ -108,88 +104,26 @@ class UploadCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        if ($input->hasOption('config') && $input->getOption('config')) {
-            $this->configPath = $input->getOption('config');
-        }
-        $this->configRealPath = realpath($this->configPath);
+        parent::execute($input, $output);
 
-        $filesystem = new Filesystem();
-        if (!$filesystem->exists($this->configPath)) {
-            $output->writeln('ERROR: config file not found: ' . $this->configPath);
-            return 1;
-        }
-
-        if ($input->hasOption('log') && $input->getOption('log')) {
-            $this->logDirPath = $input->getOption('log');
-        }
-        if (!$filesystem->exists($this->logDirPath)) {
-            $filesystem->mkdir($this->logDirPath);
-        }
-
-        $now = Carbon::now();
-        $nowFormated = $now->format('Ymd');
-
-        $logFormatter = new LineFormatter("[%datetime%] %level_name%: %message%\n"); # %context%
-        $this->logger = new Logger('flickr_uploader');
-
-        $logHandlerStderr = new StreamHandler('php://stderr', Logger::DEBUG);
-        $logHandlerStderr->setFormatter($logFormatter);
-        $this->logger->pushHandler($logHandlerStderr);
-
-        $logHandlerFile = new StreamHandler(
-            $this->logDirPath . '/flickr_upload_' . $nowFormated . '.log',
-            Logger::INFO
-        );
-        $logHandlerFile->setFormatter($logFormatter);
-        $this->logger->pushHandler($logHandlerFile);
-
-        $logFilesSuccessfulFilePath = $this->logDirPath . '/flickr_upload_files_successful_' . $nowFormated . '.log';
-        $logFilesSuccessfulStream = new StreamHandler($logFilesSuccessfulFilePath, Logger::INFO);
-        $logFilesSuccessfulStream->setFormatter($logFormatter);
-        $this->loggerFilesSuccessful = new Logger('flickr_uploader');
-        $this->loggerFilesSuccessful->pushHandler($logFilesSuccessfulStream);
-
-        $logFilesFailedStreamFilePath = $this->logDirPath . '/flickr_upload_files_failed_' . $nowFormated . '.log';
-        $logFilesFailedStream = new StreamHandler($logFilesFailedStreamFilePath, Logger::INFO);
-        $logFilesFailedStream->setFormatter($logFormatter);
-        $this->loggerFilesFailed = new Logger('flickr_uploader');
-        $this->loggerFilesFailed->pushHandler($logFilesFailedStream);
-
-        $config = Yaml::parse($this->configPath);
-
-        if (!isset($config)
-            || !isset($config['flickr'])
-            || !isset($config['flickr']['consumer_key'])
-            || !isset($config['flickr']['consumer_secret'])
-        ) {
-            $this->logger->critical('[main] config invalid');
-            return 1;
-        }
-
-        $this->logger->info('start');
-        $this->loggerFilesSuccessful->info('start');
-        $this->loggerFilesFailed->info('start');
-
-        $this->logger->info('Config file: ' . $this->configPath);
+        $this->getLogger()->info('start');
+        //$this->loggerFilesSuccessful->info('start');
+        //$this->loggerFilesFailed->info('start');
 
         $description = null;
         if ($input->hasOption('description') && $input->getOption('description')) {
             $description = $input->getOption('description');
-            $this->logger->info('Description: ' . $description);
+            $this->getLogger()->info('Description: ' . $description);
         }
 
         $tags = null;
         if ($input->hasOption('tags') && $input->getOption('tags')) {
             $tags = $input->getOption('tags');
-            $this->logger->debug('Tags String: ' . $tags);
+            $this->getLogger()->debug('Tags String: ' . $tags);
         }
 
         $recursive = $input->getOption('recursive');
         $dryrun = $input->getOption('dry-run');
-
-        // $this->log->info('Recursive: '.(int)$recursive);
-        // $this->log->info('Dry Run: '.(int)$dryrun);
-        // return 0;
 
         $this->signalHandlerSetup();
 
@@ -254,7 +188,7 @@ class UploadCommand extends Command
 
             pcntl_signal_dispatch();
 
-            return $this->exit >= 2 ? 1 : 0;
+            return $this->getExit() >= 2 ? 1 : 0;
         };
         $guzzleAdapterClientConfig->set(GuzzleHttpClient::CURL_OPTIONS, $curlOptions);
 
@@ -269,22 +203,23 @@ class UploadCommand extends Command
         $photosetAll = [];
         $photosetAllLower = [];
 
-        $xml = null;
-        try {
-            $xml = $apiFactory->call('flickr.photosets.getList');
-        } catch (Exception $e) {
-            $this->logger->critical('[main] flickr.photosets.getList ERROR: ' . $e->getMessage());
-            return 1;
-        }
+        $xml = $apiFactory->call('flickr.photosets.getList');
 
+        /**
+         * @var int $n
+         * @var SimpleXMLElement $photoset
+         */
         foreach ($xml->photosets->photoset as $n => $photoset) {
             pcntl_signal_dispatch();
-            if ($this->exit) {
+            if ($this->getExit()) {
                 break;
             }
 
-            $photosetAll[(int)$photoset->attributes()->id] = (string)$photoset->title;
-            $photosetAllLower[(int)$photoset->attributes()->id] = strtolower((string)$photoset->title);
+            $id=(int)$photoset->attributes()->id;
+            $title = (string)$photoset->title;
+
+            $photosetAll[$id] = $title;
+            $photosetAllLower[$id] = strtolower($title);
         }
 
         $photosets = [];
@@ -314,9 +249,9 @@ class UploadCommand extends Command
             // Make the local directory if it doesn't exist.
             if (!$filesystem->exists($configUploadedBaseDir)) {
                 $filesystem->mkdir($configUploadedBaseDir);
-                $this->logger->info('Created directory: ' . $configUploadedBaseDir);
+                $this->getLogger()->info('Created directory: ' . $configUploadedBaseDir);
             }
-            $this->logger->info('Uploaded files will be moved to: ' . $configUploadedBaseDir);
+            $this->getLogger()->info('Uploaded files will be moved to: ' . $configUploadedBaseDir);
         }
 
         $totalFiles = 0;
@@ -324,7 +259,7 @@ class UploadCommand extends Command
         $fileErrors = 0;
         $filesFailed = [];
 
-        $finderFilter = $filter = function (SplFileInfo $file) {
+        $filter = function (SplFileInfo $file) {
             if (in_array($file->getFilename(), FlickrCli::FILES_INORE)) {
                 return false;
             }
@@ -340,18 +275,18 @@ class UploadCommand extends Command
 
         $directories = $input->getArgument('directory');
         foreach ($directories as $argDir) {
-            $srcDir = new SplFileInfo($argDir);
+            //$srcDir = new SplFileInfo($argDir);
 
             $uploadBaseDirPath = '';
             if ($configUploadedBaseDir) {
                 $uploadBaseDirPath = $configUploadedBaseDir . '/' . str_replace('/', '_', $argDir);
             }
 
-            $this->logger->info('[dir] upload dir: ' . $argDir . ' ' . $uploadBaseDirPath);
+            $this->getLogger()->info('[dir] upload dir: ' . $argDir . ' ' . $uploadBaseDirPath);
 
             foreach ($finder->in($argDir) as $file) {
                 pcntl_signal_dispatch();
-                if ($this->exit) {
+                if ($this->getExit()) {
                     break;
                 }
 
@@ -364,15 +299,13 @@ class UploadCommand extends Command
 
                 $this->uploadFileSize = filesize($filePath);
                 $this->uploadFileSizeLen = strlen(number_format($this->uploadFileSize));
-                $uploaded = 0;
-                $timePrev = time();
 
                 $uploadDirPath = '';
                 if ($uploadBaseDirPath) {
                     $uploadDirPath = $uploadBaseDirPath . '/' . $dirRelativePath;
 
                     if (!$filesystem->exists($uploadDirPath)) {
-                        $this->logger->info("[dir] create '" . $uploadDirPath . "'");
+                        $this->getLogger()->info("[dir] create '" . $uploadDirPath . "'");
                         $filesystem->mkdir($uploadDirPath);
                     }
                 }
@@ -382,14 +315,14 @@ class UploadCommand extends Command
                 if (!in_array(strtolower($fileExt), FlickrCli::ACCEPTED_EXTENTIONS)) {
                     $fileErrors++;
                     $filesFailed[] = $fileRelativePathStr;
-                    $this->logger->error('[file] invalid extension: ' . $fileRelativePathStr);
-                    $this->loggerFilesFailed->error($fileRelativePathStr);
+                    $this->getLogger()->error('[file] invalid extension: ' . $fileRelativePathStr);
+                    //$this->loggerFilesFailed->error($fileRelativePathStr);
 
                     continue;
                 }
 
                 if ($dryrun) {
-                    $this->logger->info(sprintf(
+                    $this->getLogger()->info(sprintf(
                         "[file] dry upload '%s' '%s' %s",
                         $fileRelativePathStr,
                         $dirRelativePath,
@@ -398,7 +331,7 @@ class UploadCommand extends Command
                     continue;
                 }
 
-                $this->logger->info("[file] upload '"
+                $this->getLogger()->info("[file] upload '"
                     . $fileRelativePathStr . "'  " . $bytesize->format($this->uploadFileSize));
                 $xml = null;
                 try {
@@ -407,7 +340,7 @@ class UploadCommand extends Command
                     // print "\r\x1b[0K";
                     print "\n";
                 } catch (Exception $e) {
-                    $this->logger->error('[file] upload: ' . $e->getMessage());
+                    $this->getLogger()->error('[file] upload: ' . $e->getMessage());
                     $xml = null;
                 }
 
@@ -428,7 +361,7 @@ class UploadCommand extends Command
                     $this->loggerFilesSuccessful->info($fileRelativePathStr);
 
                     if ($uploadDirPath) {
-                        $this->logger->info('[file] move to uploaded dir: ' . $uploadDirPath);
+                        $this->getLogger()->info('[file] move to uploaded dir: ' . $uploadDirPath);
                         $filesystem->rename($filePath, $uploadDirPath . '/' . $fileName);
                     }
                 } else {
@@ -438,7 +371,7 @@ class UploadCommand extends Command
 
                     $this->loggerFilesFailed->error($fileRelativePathStr);
                 }
-                $this->logger->info('[file] status: ' . $logLine . ' - ID ' . $photoId);
+                $this->getLogger()->info('[file] status: ' . $logLine . ' - ID ' . $photoId);
 
                 if (!$successful) {
                     continue;
@@ -446,9 +379,8 @@ class UploadCommand extends Command
 
                 if ($photosetsNew) {
                     foreach ($photosetsNew as $photosetTitle) {
-                        $this->logger->info('[photoset] create ' . $photosetTitle . ' ... ');
+                        $this->getLogger()->info('[photoset] create ' . $photosetTitle . ' ... ');
 
-                        $photosetId = 0;
                         $xml = null;
                         try {
                             $xml = $apiFactory->call('flickr.photosets.create', [
@@ -456,7 +388,7 @@ class UploadCommand extends Command
                                 'primary_photo_id' => $photoId,
                             ]);
                         } catch (Exception $e) {
-                            $this->logger->critical(
+                            $this->getLogger()->critical(
                                 '[photoset] create ' . $photosetTitle . ' FAILED: ' . $e->getMessage()
                             );
                             return 1;
@@ -466,14 +398,14 @@ class UploadCommand extends Command
                                 $photosetId = (int)$xml->photoset->attributes()->id;
                                 $photosets[] = $photosetId;
 
-                                $this->logger->info('[photoset] create ' . $photosetTitle . ' OK - ID ' . $photosetId);
+                                $this->getLogger()->info('[photoset] create ' . $photosetTitle . ' OK - ID ' . $photosetId);
                             } else {
                                 $code = (int)$xml->err->attributes()->code;
-                                $this->logger->critical('[photoset] create ' . $photosetTitle . ' FAILED: ' . $code);
+                                $this->getLogger()->critical('[photoset] create ' . $photosetTitle . ' FAILED: ' . $code);
                                 return 1;
                             }
                         } else {
-                            $this->logger->critical('[photoset] create ' . $photosetTitle . ' FAILED');
+                            $this->getLogger()->critical('[photoset] create ' . $photosetTitle . ' FAILED');
                             return 1;
                         }
                     }
@@ -481,7 +413,7 @@ class UploadCommand extends Command
                 }
 
                 if (count($photosets)) {
-                    $this->logger->info('[file] add to sets ... ');
+                    $this->getLogger()->info('[file] add to sets ... ');
 
                     $logLine = '';
                     foreach ($photosets as $photosetId) {
@@ -506,101 +438,33 @@ class UploadCommand extends Command
                                     if ($code == 3) {
                                         $logLine .= 'OK ';
                                     } else {
-                                        $this->logger->critical('[file] add to sets FAILED: ' . $code);
+                                        $this->getLogger()->critical('[file] add to sets FAILED: ' . $code);
                                         return 1;
                                     }
                                 } else {
-                                    $this->logger->critical('[file] add to sets FAILED');
+                                    $this->getLogger()->critical('[file] add to sets FAILED');
                                     return 1;
                                 }
                             }
                         }
                     }
 
-                    $this->logger->info('[file] added to sets: ' . $logLine);
+                    $this->getLogger()->info('[file] added to sets: ' . $logLine);
                 }
             }
         }
 
-        $this->logger->info('[main] total uploaded: ' . ($uploadedTotal > 0 ? $bytesize->format($uploadedTotal) : 0));
-        $this->logger->info('[main] total files:    ' . $totalFiles);
-        $this->logger->info('[main] files uploaded: ' . $totalFilesUploaded);
+        $this->getLogger()->info('[main] total uploaded: ' . ($uploadedTotal > 0 ? $bytesize->format($uploadedTotal) : 0));
+        $this->getLogger()->info('[main] total files:    ' . $totalFiles);
+        $this->getLogger()->info('[main] files uploaded: ' . $totalFilesUploaded);
+
         $filesFailedMsg = count($filesFailed) ? "\n" . join("\n", $filesFailed) : '';
-        $this->logger->info('[main] files failed:   ' . $fileErrors . $filesFailedMsg);
+        $this->getLogger()->info('[main] files failed:   ' . $fileErrors . $filesFailedMsg);
 
-        $this->logger->info('exit');
-        $this->loggerFilesSuccessful->info('exit');
-        $this->loggerFilesFailed->info('exit');
+        $this->getLogger()->info('exit');
+        //$this->loggerFilesSuccessful->info('exit');
+        //$this->loggerFilesFailed->info('exit');
 
-        return $this->exit;
-    }
-
-    /**
-     * @deprecated
-     */
-    private function signalHandlerSetup()
-    {
-        if (function_exists('pcntl_signal')) {
-            $this->logger->warning('pcntl_signal() function not found for Signal Handler Setup');
-            return;
-        }
-
-        $this->logger->info('Setup Signal Handler');
-
-        declare(ticks=1);
-
-        $setup = pcntl_signal(SIGTERM, [$this, 'signalHandler']);
-        $this->logger->debug('Setup Signal Handler, SIGTERM: ' . ($setup ? 'OK' : 'FAILED'));
-
-        $setup = pcntl_signal(SIGINT, [$this, 'signalHandler']);
-        $this->logger->debug('Setup Signal Handler, SIGINT: ' . ($setup ? 'OK' : 'FAILED'));
-
-        $setup = pcntl_signal(SIGHUP, [$this, 'signalHandler']);
-        $this->logger->debug('Setup Signal Handler, SIGHUP: ' . ($setup ? 'OK' : 'FAILED'));
-    }
-
-    /**
-     * @deprecated
-     * @param int $signal
-     */
-    private function signalHandler(int $signal)
-    {
-        $this->exit++;
-
-        switch ($signal) {
-            case SIGTERM:
-                $this->logger->notice('signal: SIGTERM');
-                break;
-
-            case SIGINT:
-                print PHP_EOL;
-                $this->logger->notice('signal: SIGINT');
-                break;
-
-            case SIGHUP:
-                $this->logger->notice('signal: SIGHUP');
-                break;
-
-            case SIGQUIT:
-                $this->logger->notice('signal: SIGQUIT');
-                break;
-
-            case SIGKILL:
-                $this->logger->notice('signal: SIGKILL');
-                break;
-
-            case SIGUSR1:
-                $this->logger->notice('signal: SIGUSR1');
-                break;
-
-            default:
-                $this->logger->notice('signal: N/A');
-        }
-
-        $this->logger->notice('main abort [' . $this->exit . ']');
-
-        if ($this->exit >= 2) {
-            exit(1);
-        }
+        return $this->getExit();
     }
 }

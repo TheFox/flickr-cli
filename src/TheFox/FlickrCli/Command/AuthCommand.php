@@ -135,7 +135,7 @@ class AuthCommand extends FlickrCliCommand
             $this->io->text(sprintf('Status: %s', $stat));
         }
 
-        return 0;
+        return $this->getExit();
     }
 
     /**
