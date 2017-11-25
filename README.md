@@ -61,12 +61,12 @@ To use this software within Docker follow this steps.
 
 2. Get the access token (it will create `config.yml` file in the volume).
 
-        docker run --rm -it -u $(id -u):$(id -g) -v "$PWD":/mnt -v flickrcli:/data thefox21/flickr-cli auth --config=/data/config.yml
+        docker run --rm -it -u $(id -u):$(id -g) -v "$PWD":/mnt -v flickrcli:/data thefox21/flickr-cli auth
 
    or you can store the `config.yml` in your `$HOME/.flickr-cli` directory and use:
 
         mkdir $HOME/.flickr-cli
-        docker run --rm -it -u $(id -u):$(id -g) -v "$PWD":/mnt -v "$HOME/.flickr-cli":/data thefox21/flickr-cli auth --config=/data/config.yml
+        docker run --rm -it -u $(id -u):$(id -g) -v "$PWD":/mnt -v "$HOME/.flickr-cli":/data thefox21/flickr-cli auth
 
 ### Usage
 
