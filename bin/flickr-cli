@@ -2,8 +2,8 @@
 <?php
 
 $tries = [
-    __DIR__ . '/../../autoload.php',
-    __DIR__ . '/../vendor/autoload.php',
+    __DIR__ . '/../../../autoload.php', // $HOME/.composer/vendor/autoload.php
+    __DIR__ . '/../vendor/autoload.php', // ./vendor/autoload.php
 ];
 foreach ($tries as $file) {
     if (file_exists($file)) {
