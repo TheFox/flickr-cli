@@ -7,11 +7,10 @@ set -e
 cd "${SCRIPT_BASEDIR}/.."
 
 which php &> /dev/null || { echo 'ERROR: php not found in PATH'; exit 1; }
-which curl &> /dev/null || { echo 'ERROR: curl not found in PATH'; exit 1; }
+which composer &> /dev/null || { echo 'ERROR: composer not found in PATH'; exit 1; }
 
-if [[ ! -f composer.phar ]] ; then
-    curl -sS https://getcomposer.org/installer | php
-    chmod u=rwx,go=rx composer.phar
+if [[ ! -f .env ]]; then
+    cp .env.example .env
 fi
 
-php composer.phar install --no-interaction
+composer install --no-interaction

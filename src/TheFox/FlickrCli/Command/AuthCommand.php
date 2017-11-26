@@ -2,14 +2,14 @@
 
 namespace TheFox\FlickrCli\Command;
 
-use Exception;
-use Symfony\Component\Console\Command\Command;
+use RuntimeException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Input\StringInput;
+use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Filesystem\Filesystem;
-use Symfony\Component\Yaml\Yaml;
 use OAuth\Common\Consumer\Credentials;
 use OAuth\OAuth1\Signature\Signature;
 use OAuth\Common\Storage\Memory;
@@ -19,24 +19,54 @@ use Rezzza\Flickr\Http\GuzzleAdapter as RezzzaGuzzleAdapter;
 use TheFox\OAuth\Common\Http\Client\GuzzleStreamClient;
 use TheFox\OAuth\OAuth1\Service\Flickr;
 
-class AuthCommand extends Command
+class AuthCommand extends FlickrCliCommand
 {
     /**
-     * @var string The name of the configuration file. Defaults to 'config.yml'.
+     * @var SymfonyStyle
      */
-    private $configPath;
+    protected $io;
+
+    /**
+     * @param null|string $name
+     */
+    public function __construct($name = null)
+    {
+        parent::__construct($name);
+
+        // Set default value.
+        $nullInput = new StringInput('');
+        $nullOutput = new NullOutput();
+        $this->io = new SymfonyStyle($nullInput, $nullOutput);
+    }
 
     protected function configure()
     {
+        parent::configure();
+
         $this->setName('auth');
         $this->setDescription('Retrieve the Access Token for your Flickr application.');
 
-        $this->addOption('config', 'c', InputOption::VALUE_OPTIONAL, 'Path to config file. Default: config.yml');
-
         $msg = 'Request authorisation even if the Access Token has already been stored.';
         $this->addOption('force', 'f', InputOption::VALUE_NONE, $msg);
+    }
 
-        $this->configPath = 'config.yml';
+    /**
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     */
+    protected function setup(InputInterface $input, OutputInterface $output)
+    {
+        $this->setIsConfigFileRequired(false);
+
+        parent::setup($input, $output);
+
+        $this->setupIo();
+    }
+
+    private function setupIo()
+    {
+        $io = new SymfonyStyle($this->getInput(), $this->getOutput());
+        $this->io = $io;
     }
 
     /**
@@ -46,106 +76,156 @@ class AuthCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        if ($input->hasOption('config') && $input->getOption('config')) {
-            $this->configPath = $input->getOption('config');
-        }
-        $io = new SymfonyStyle($input, $output);
-        $io->text('Using config: ' . $this->configPath);
+        $this->setup($input, $output);
 
-        $filesystem = new Filesystem();
-        if (!$filesystem->exists($this->configPath)) {
-            $parameters = [
+        $configFilePath = $this->getConfigFilePath();
+
+        // Get the config file, or create one.
+        try {
+            $config = $this->loadConfig();
+        } catch (RuntimeException $exception) {
+            $filesystem = new Filesystem();
+            if ($filesystem->exists($configFilePath)) {
+                throw $exception;
+            }
+
+            // If we couldn't get the config, ask for the basic config values and then try again.
+            $this->io->writeln('Go to https://www.flickr.com/services/apps/create/apply/ to create a new API key.');
+            $customerKey = $this->io->ask('Consumer key');
+            $customerSecret = $this->io->ask('Consumer secret');
+
+            $config = [
                 'flickr' => [
-                    'consumer_key' => $io->ask('Consumer key:'),
-                    'consumer_secret' => $io->ask('Consumer secret:'),
+                    'consumer_key' => $customerKey,
+                    'consumer_secret' => $customerSecret,
                 ],
             ];
+            $this->saveConfig($config);
 
-            $filesystem->touch($this->configPath);
-            $filesystem->chmod($this->configPath, 0600);
-            file_put_contents($this->configPath, Yaml::dump($parameters));
+            // Fetch again, to make sure it's saved correctly.
+            $config = $this->loadConfig();
         }
 
-        $parameters = Yaml::parse($this->configPath);
-        $hasToken = isset($parameters['flickr']['token']) && isset($parameters['flickr']['token_secret']);
-        if (!$hasToken || $input->getOption('force')) {
-            $storage = new Memory();
-            $credentials = new Credentials(
-                $parameters['flickr']['consumer_key'],
-                $parameters['flickr']['consumer_secret'],
-                'oob' // Out-of-band, i.e. no callback required for a CLI application.
-            );
-            $flickrService = new Flickr($credentials, new GuzzleStreamClient(), $storage, new Signature($credentials));
-            if ($token = $flickrService->requestRequestToken()) {
-                $accessToken = $token->getAccessToken();
-                $accessTokenSecret = $token->getAccessTokenSecret();
+        $hasToken = isset($config['flickr']['token']) && isset($config['flickr']['token_secret']);
+        if (!$hasToken || $this->getInput()->hasOption('force') && $this->getInput()->getOption('force')) {
+            $newConfig = $this->authenticate($configFilePath, $config['flickr']['consumer_key'], $config['flickr']['consumer_secret']);
 
-                if ($accessToken && $accessTokenSecret) {
-                    $url = $flickrService->getAuthorizationUri([
-                        'oauth_token' => $accessToken,
-                        'perms' => $this->getPermissionType($io),
-                    ]);
+            $config['flickr']['token'] = $newConfig['token'];
+            $config['flickr']['token_secret'] = $newConfig['token_secret'];
 
-                    $io->text("Go to this URL to authorize FlickrCLI:\n\n\t" . $url);
-
-                    // Flickr says, at this point:
-                    // "You have successfully authorized the application XYZ to use your credentials.
-                    // You should now type this code into the application:"
-                    $question = 'Paste the 9-digit code (with or without hyphens) here:';
-                    $verifier = $io->ask($question, null, function ($code) {
-                        return preg_replace('/[^0-9]/', '', $code);
-                    });
-
-                    try {
-                        if ($token = $flickrService->requestAccessToken($token, $verifier, $accessTokenSecret)) {
-                            $accessToken = $token->getAccessToken();
-                            $accessTokenSecret = $token->getAccessTokenSecret();
-
-                            $io->success('Saving config to ' . $this->configPath);
-                            $parameters['flickr']['token'] = $accessToken;
-                            $parameters['flickr']['token_secret'] = $accessTokenSecret;
-                            file_put_contents($this->configPath, Yaml::dump($parameters));
-                        }
-                    } catch (Exception $e) {
-                        $io->error($e->getMessage());
-                        return 1;
-                    }
-                }
-            }
+            $this->io->success(sprintf('Saving config to %s', $configFilePath));
+            $this->saveConfig($config);
         }
 
-        try {
-            $metadata = new Metadata($parameters['flickr']['consumer_key'], $parameters['flickr']['consumer_secret']);
-            $metadata->setOauthAccess($parameters['flickr']['token'], $parameters['flickr']['token_secret']);
+        // Now test the stored credentials.
+        $metadata = new Metadata($config['flickr']['consumer_key'], $config['flickr']['consumer_secret']);
+        $metadata->setOauthAccess($config['flickr']['token'], $config['flickr']['token_secret']);
 
-            $factory = new ApiFactory($metadata, new RezzzaGuzzleAdapter());
+        $factory = new ApiFactory($metadata, new RezzzaGuzzleAdapter());
 
-            $xml = $factory->call('flickr.test.login');
-            $io->text('Status: ' . (string)$xml->attributes()->stat);
-        } catch (Exception $e) {
-            $io->error($e->getMessage());
-            return 1;
+        $this->io->text('Test Login');
+        $xml = $factory->call('flickr.test.login');
+
+        $attributes = $xml->attributes();
+        $stat = (string)$attributes->stat;
+
+        if (strtolower($stat) == 'ok') {
+            $this->io->success('Test Login successful');
+        } else {
+            $this->io->text(sprintf('Status: %s', $stat));
         }
 
-        return 0;
+        return $this->getExit();
+    }
+
+    /**
+     * Authenticate with Flickr.
+     *
+     * @param string $configPath The config filename.
+     * @param string $customerKey
+     * @param string $customerSecret
+     * @return array
+     */
+    protected function authenticate(string $configPath, string $customerKey, string $customerSecret)
+    {
+        $storage = new Memory();
+
+        // Out-of-band, i.e. no callback required for a CLI application.
+        $credentials = new Credentials($customerKey, $customerSecret, 'oob');
+
+        $streamClient = new GuzzleStreamClient();
+        $signature = new Signature($credentials);
+
+        $flickrService = new Flickr($credentials, $streamClient, $storage, $signature);
+        $token = $flickrService->requestRequestToken();
+        if (!$token) {
+            throw new RuntimeException('Request RequestToken failed.');
+        }
+
+        $accessToken = $token->getAccessToken();
+        if (!$accessToken) {
+            throw new RuntimeException('Cannot get Access Token.');
+        }
+
+        $accessTokenSecret = $token->getAccessTokenSecret();
+        if (!$accessTokenSecret) {
+            throw new RuntimeException('Cannot get Access Token Secret.');
+        }
+
+        // Ask user for permissions.
+        $permissions = $this->getPermissionType();
+
+        $additionalParameters = [
+            'oauth_token' => $accessToken,
+            'perms' => $permissions,
+        ];
+        $url = $flickrService->getAuthorizationUri($additionalParameters);
+
+        $this->io->writeln(sprintf("Go to this URL to authorize FlickrCLI:\n\n%s", $url));
+
+        // Flickr says, at this point:
+        // "You have successfully authorized the application XYZ to use your credentials.
+        // You should now type this code into the application:"
+        $question = 'Paste the 9-digit code (with or without hyphens) here:';
+        $verifier = $this->io->ask($question, null, function ($code) {
+            $newCode = preg_replace('/[^0-9]/', '', $code);
+            return $newCode;
+        });
+
+        $token = $flickrService->requestAccessToken($token, $verifier, $accessTokenSecret);
+        if (!$token) {
+            throw new RuntimeException('Request AccessToken failed.');
+        }
+
+        $accessToken = $token->getAccessToken();
+        $accessTokenSecret = $token->getAccessTokenSecret();
+
+        $newConfig = [
+            'token' => $accessToken,
+            'token_secret' => $accessTokenSecret,
+        ];
+        return $newConfig;
     }
 
     /**
      * Ask the user if they want to authenticate with read, write, or delete permissions.
-     * @param SymfonyStyle $io The IO object.
+     *
      * @return string The permission, one of 'read', write', or 'delete'. Defaults to 'read'.
      */
-    protected function getPermissionType(SymfonyStyle $io): string
+    protected function getPermissionType(): string
     {
-        $question = 'The permission you grant to this application depends on what you want to do with it.';
-        $question .= 'Please select from the following three options:';
+        $this->io->writeln('The permission you grant to FlickrCLI depends on what you want to do with it.');
+
+        $question = 'Please select from the following three options';
         $choices = [
             'read' => 'download photos',
-            'write' => 'upload upload photos',
-            'delete' => 'download and delete photos from Flickr',
+            'write' => 'upload photos',
+            'delete' => 'download and/or delete photos from Flickr',
         ];
+
         // Note that we're not currently setting a default here, because it is not yet possible
         // to set a non-numeric key as the default. https://github.com/symfony/symfony/issues/15032
-        return $io->choice($question, $choices);
+        $permissions = $this->io->choice($question, $choices);
+        return $permissions;
     }
 }
