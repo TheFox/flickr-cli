@@ -1,7 +1,22 @@
 #!/usr/bin/env php
 <?php
 
-require_once __DIR__ . '/../vendor/autoload.php';
+$tries = [
+    __DIR__ . '/../../autoload.php',
+    __DIR__ . '/../vendor/autoload.php',
+];
+foreach ($tries as $file) {
+    if (file_exists($file)) {
+        $autoloader = $file;
+        break;
+    }
+}
+
+if (isset($autoloader)) {
+    require_once $autoloader;
+} else {
+    throw new \RuntimeException('Autoloader not found. Run "composer install" to fix this.');
+}
 
 use Symfony\Component\Console\Application;
 
