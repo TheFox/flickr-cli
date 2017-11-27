@@ -74,7 +74,7 @@ Upload directory `2017.06.01-Spindleruv_mlyn` full of JPEGs to Flickr:
 
     docker run --rm -it -u $(id -u):$(id -g) -v "$PWD":/mnt -v flickrcli:/data thefox21/flickr-cli upload --config=/data/config.yml --tags "2017.06.01 Spindleruv_mlyn" --sets "2017.06.01-Spindleruv_mlyn" 2017.06.01-Spindleruv_mlyn
 
-   or you can use `$HOME/.flickr-cli/config.yml` generated previously:
+    or you can use `$HOME/.flickr-cli/config.yml` generated previously:
 
     docker run --rm -it -u $(id -u):$(id -g) -v "$PWD":/mnt -v "$HOME/.flickr-cli":/data thefox21/flickr-cli upload --config=/data/config.yml --tags "my_tags" --sets "my_set" directory_with_pictures
 
