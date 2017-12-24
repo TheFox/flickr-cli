@@ -68,14 +68,14 @@ abstract class FlickrCliCommand extends Command
      */
     public function __construct($name = null)
     {
-        parent::__construct($name);
-
         $this->exit = 0;
         $this->logger = new NullLogger();
         $this->output = new NullOutput();
-        $this->configFilePath = 'config.yml';
+        $this->configFilePath = getcwd() . '/config.yml';
         $this->isConfigFileRequired = true;
         $this->config = [];
+        // Set variables before parent constructor so that they can be used in self::configure().
+        parent::__construct($name);
     }
 
     /**
@@ -172,9 +172,10 @@ abstract class FlickrCliCommand extends Command
      */
     protected function configure()
     {
-        $this
-            ->addOption('config', 'c', InputOption::VALUE_OPTIONAL, 'Path to config file. Default: ./config.yml')//->addOption('log', 'l', InputOption::VALUE_OPTIONAL, 'Path to log directory. Default: ./log')
-        ;
+        $desc = "Path of the config file.\n"
+            . "Can also be set with the FLICKRCLI_CONFIG environment variable.\n"
+            . "Will default to current directory: " . $this->getConfigFilePath();
+        $this->addOption('config', 'c', InputOption::VALUE_OPTIONAL, $desc);
     }
 
     /**
@@ -231,16 +232,15 @@ abstract class FlickrCliCommand extends Command
     {
         $input = $this->getInput();
 
-        if ($input->hasOption('config') && $input->getOption('config')) {
-            $configFilePath = $input->getOption('config');
-        } elseif ($envConfigFile = getenv('FLICKRCLI_CONFIG')) {
-            $configFilePath = $envConfigFile;
+        // Get the name of the config file from the CLI, or environment,
+        // or use the default (which is set in the constructor).
+        $cliConfigFile = $input->getOption('config');
+        $envConfigFile = getenv('FLICKRCLI_CONFIG');
+        if ($cliConfigFile) {
+            $this->configFilePath = $cliConfigFile;
+        } elseif ($envConfigFile) {
+            $this->configFilePath = $envConfigFile;
         }
-
-        if (!isset($configFilePath) || !$configFilePath) {
-            throw new RuntimeException('No config file path found.');
-        }
-        $this->configFilePath = $configFilePath;
 
         $filesystem = new Filesystem();
         if ($filesystem->exists($this->configFilePath)) {
