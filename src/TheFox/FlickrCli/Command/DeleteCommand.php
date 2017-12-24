@@ -85,7 +85,14 @@ class DeleteCommand extends FlickrCliCommand
                         $apiFactory->call('flickr.photos.delete', ['photo_id' => $id]);
                         $this->getLogger()->info(sprintf('[photo] %d/%d deleted %s', $page, $fileCount, $id));
                     } catch (Exception $e) {
-                        $this->getLogger()->info(sprintf('[photo] %d/%d delete %s FAILED: %s', $page, $fileCount, $id, $e->getMessage()));
+                        $msg = sprintf(
+                            '[photo] %d/%d delete %s FAILED: %s',
+                            $page,
+                            $fileCount,
+                            $id,
+                            $e->getMessage()
+                        );
+                        $this->getLogger()->info($msg);
                     }
                 }
             }

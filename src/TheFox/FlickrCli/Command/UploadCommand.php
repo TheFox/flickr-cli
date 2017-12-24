@@ -82,7 +82,18 @@ class UploadCommand extends FlickrCliCommand
         $uploadedPrev = 0;
         $uploadedDiffPrev = [0, 0, 0, 0, 0];
 
-        $curlOptions[CURLOPT_PROGRESSFUNCTION] = function ($ch, $dlTotal = 0, $dlNow = 0, $ulTotal = 0, $ulNow = 0) use ($timePrev, $uploadedTotal, $uploadedPrev, $uploadedDiffPrev) {
+        $curlOptions[CURLOPT_PROGRESSFUNCTION] = function (
+            $ch,
+            $dlTotal = 0,
+            $dlNow = 0,
+            $ulTotal = 0,
+            $ulNow = 0
+        ) use (
+            $timePrev,
+            $uploadedTotal,
+            $uploadedPrev,
+            $uploadedDiffPrev
+        ) {
 
             $uploadedDiff = $ulNow - $uploadedPrev;
             $uploadedPrev = $ulNow;
@@ -278,7 +289,8 @@ class UploadCommand extends FlickrCliCommand
                     continue;
                 }
 
-                $this->getLogger()->info(sprintf('[file] upload "%s" %s', $fileRelativePathStr, $uploadFileSizeFormatted));
+                $msg = sprintf('[file] upload "%s" %s', $fileRelativePathStr, $uploadFileSizeFormatted);
+                $this->getLogger()->info($msg);
                 try {
                     $xml = $apiFactoryVerbose->upload($filePath, $fileName, $description, $tags);
 
@@ -329,7 +341,8 @@ class UploadCommand extends FlickrCliCommand
                                 'primary_photo_id' => $photoId,
                             ]);
                         } catch (Exception $e) {
-                            $this->getLogger()->critical(sprintf('[photoset] create %s FAILED: %s', $photosetTitle, $e->getMessage()));
+                            $msg = sprintf('[photoset] create %s FAILED: %s', $photosetTitle, $e->getMessage());
+                            $this->getLogger()->critical($msg);
                             return 1;
                         }
 
@@ -337,10 +350,12 @@ class UploadCommand extends FlickrCliCommand
                             $photosetId = (int)$xml->photoset->attributes()->id;
                             $photosets[] = $photosetId;
 
-                            $this->getLogger()->info(sprintf('[photoset] create %s OK - ID %s', $photosetTitle, $photosetId));
+                            $msg = sprintf('[photoset] create %s OK - ID %s', $photosetTitle, $photosetId);
+                            $this->getLogger()->info($msg);
                         } else {
                             $code = (int)$xml->err->attributes()->code;
-                            $this->getLogger()->critical(sprintf('[photoset] create %s FAILED: %s', $photosetTitle, $code));
+                            $msg = sprintf('[photoset] create %s FAILED: %s', $photosetTitle, $code);
+                            $this->getLogger()->critical($msg);
                             return 1;
                         }
                     }

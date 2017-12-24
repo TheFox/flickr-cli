@@ -106,9 +106,13 @@ class AuthCommand extends FlickrCliCommand
             $config = $this->loadConfig();
         }
 
+        $consumerKey=$config['flickr']['consumer_key'];
+        $consumerSecret=$config['flickr']['consumer_secret'];
+
         $hasToken = isset($config['flickr']['token']) && isset($config['flickr']['token_secret']);
-        if (!$hasToken || $this->getInput()->hasOption('force') && $this->getInput()->getOption('force')) {
-            $newConfig = $this->authenticate($configFilePath, $config['flickr']['consumer_key'], $config['flickr']['consumer_secret']);
+        $hasForceOpt = $this->getInput()->hasOption('force') && $this->getInput()->getOption('force');
+        if (!$hasToken || $hasForceOpt) {
+            $newConfig = $this->authenticate($configFilePath, $consumerKey, $consumerSecret);
 
             $config['flickr']['token'] = $newConfig['token'];
             $config['flickr']['token_secret'] = $newConfig['token_secret'];
@@ -118,8 +122,8 @@ class AuthCommand extends FlickrCliCommand
         }
 
         // Now test the stored credentials.
-        $metadata = new Metadata($config['flickr']['consumer_key'], $config['flickr']['consumer_secret']);
-        $metadata->setOauthAccess($config['flickr']['token'], $config['flickr']['token_secret']);
+        $metadata = new Metadata($consumerKey, $consumerSecret);
+        $metadata->setOauthAccess($config['flickr']['token'], $consumerSecret);
 
         $factory = new ApiFactory($metadata, new RezzzaGuzzleAdapter());
 

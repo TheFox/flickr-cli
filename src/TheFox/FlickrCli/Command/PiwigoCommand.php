@@ -56,6 +56,7 @@ class PiwigoCommand extends FlickrCliCommand
      * @param InputInterface $input An InputInterface instance
      * @param OutputInterface $output An OutputInterface instance
      * @return int
+     * @throws \Doctrine\DBAL\DBALException
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
@@ -92,7 +93,9 @@ class PiwigoCommand extends FlickrCliCommand
             || !isset($config['piwigo']['dbpass'])
             || !isset($config['piwigo']['dbhost'])
         ) {
-            throw new RuntimeException('Please set the all of the following options in the \'piwigo\' section of config.yml: dbname, dbuser, dbpass, & dbhost.');
+            $msg = 'Please set the all of the following options in the \'piwigo\' section of config.yml: ';
+            $msg .= 'dbname, dbuser, dbpass, & dbhost.';
+            throw new RuntimeException($msg);
         }
     }
 
@@ -150,7 +153,8 @@ class PiwigoCommand extends FlickrCliCommand
         }
 
         // Get tags (including a checksum machine tag).
-        $cats = $this->getConnection()->prepare('SELECT t.name FROM image_tag it JOIN tags t ON it.tag_id=t.id WHERE it.image_id=:id');
+        $sql = 'SELECT t.name FROM image_tag it JOIN tags t ON it.tag_id=t.id WHERE it.image_id=:id';
+        $cats = $this->getConnection()->prepare($sql);
         $cats->bindValue('id', $image['id']);
         $cats->execute();
 

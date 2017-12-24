@@ -74,6 +74,7 @@ abstract class FlickrCliCommand extends Command
         $this->configFilePath = getcwd() . '/config.yml';
         $this->isConfigFileRequired = true;
         $this->config = [];
+
         // Set variables before parent constructor so that they can be used in self::configure().
         parent::__construct($name);
     }
