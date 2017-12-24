@@ -30,7 +30,8 @@
         "lusitanian/oauth": "^0.2",
         "rych/bytesize": "^1.0",
         "doctrine/dbal": "^2.5",
-        "doctrine/annotations": "<1.5"
+        "doctrine/annotations": "<1.5",
+        "doctrine/cache": "<1.7"
     },
     "require-dev": {
         "phpstan/phpstan": "^0.7",
