@@ -4,7 +4,7 @@ php:
     - 7.1
     - 7.2
 install:
-    - composer install --prefer-source --no-interaction
+    - composer install --prefer-source --no-progress --no-suggest --no-interaction
 before_script:
     - phpenv rehash
     - ./vendor/bin/phpcs --config-set ignore_warnings_on_exit 1
