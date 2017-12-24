@@ -3,16 +3,10 @@
 namespace TheFox\FlickrCli\Command;
 
 use SimpleXMLElement;
-use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Filesystem\Filesystem;
-use Symfony\Component\Yaml\Yaml;
-use Rezzza\Flickr\Metadata;
-use Rezzza\Flickr\ApiFactory;
-use Rezzza\Flickr\Http\GuzzleAdapter as RezzzaGuzzleAdapter;
 
 class FilesCommand extends FlickrCliCommand
 {

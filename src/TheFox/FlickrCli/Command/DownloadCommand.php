@@ -312,8 +312,6 @@ class DownloadCommand extends FlickrCliCommand
         $originalFormat = (string)$xmlPhoto->photo->attributes()->originalformat;
         $description = (string)$xmlPhoto->photo->description;
         $media = (string)$xmlPhoto->photo->attributes()->media;
-        //$ownerPathalias = (string)$xmlPhoto->photo->owner->attributes()->path_alias;
-        //$ownerNsid = (string)$xmlPhoto->photo->owner->attributes()->nsid;
 
         // Set the filename.
         if (empty($basename)) {
@@ -340,48 +338,7 @@ class DownloadCommand extends FlickrCliCommand
         $url = sprintf($urlFormat, $farm, $server, $id, $originalSecret, $originalFormat);
 
         if ($media == 'video') {
-            // $url = 'http://www.flickr.com/photos/'.$ownerPathalias.'/'.$id.'/play/orig/'.$originalSecret.'/';
-            // $url = 'https://www.flickr.com/video_download.gne?id='.$id;
-
-            // $contentDispositionHeaderArray = array();
-
-            // try{
-            // 	$client = new GuzzleHttpClient();
-            // 	$request = $client->head($url);
-            // 	$response = $request->send();
-
-            // 	$url = $response->getEffectiveUrl();
-
-            // 	$contentDispositionHeader = $response->getHeader('content-disposition');
-            // 	$contentDispositionHeaderArray = $contentDispositionHeader->toArray();
-            // }
-            // catch(Exception $e){
-            // $this->log->info(sprintf('[%s] %s, farm %s, server %s, %s HEAD FAILED: %s',
-            // 	$media, $id, $farm, $server, $fileName, $e->getMessage()));
-            // 	$this->logFilesFailed->error($id.'.'.$originalFormat);
-
-            // 	continue;
-            // }
-
-            // if(count($contentDispositionHeaderArray)){
-            // 	$pos = strpos(strtolower($contentDispositionHeaderArray[0]), 'filename=');
-            // 	if($pos !== false){
-            // 		$pathinfo = pathinfo(substr($contentDispositionHeaderArray[0], $pos + 9));
-            // 		if(isset($pathinfo['extension'])){
-            // 			$originalFormat = $pathinfo['extension'];
-            // 			$fileName = ($title ? $title : $id).'.'.$originalFormat;
-            // 			$filePath = $dstDirFullPath.'/'.$fileName;
-            // 			$filePathTmp = $dstDirFullPath.'/'.$id.'.'.$originalFormat.'.tmp';
-
-            // 			if($filesystem->exists($filePath)){
-            // 				continue;
-            // 			}
-            // 		}
-            // 	}
-            // }
-
             $this->getLogger()->error('video not supported yet');
-            //$this->loggerFilesFailed->error($id . ': video not supported yet');
             return false;
         }
 
@@ -402,7 +359,6 @@ class DownloadCommand extends FlickrCliCommand
                 $e->getMessage()
             ))
             ;
-            //$this->loggerFilesFailed->error($id . '.' . $originalFormat);
 
             return false;
         }
@@ -629,10 +585,6 @@ class DownloadCommand extends FlickrCliCommand
 
             // Tags
             if (isset($photo->tags->tag)) {
-                //$tagsFn = $this->getTagMappingFunction();
-                //$tags = (array)$photo->tags;
-                //$metadata['tags'] = array_map($tagsFn, $tags);
-
                 foreach ($photo->tags->tag as $tag) {
                     $metadata['tags'][] = [
                         'id' => (string)$tag['id'],

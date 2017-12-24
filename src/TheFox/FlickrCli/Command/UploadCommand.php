@@ -69,10 +69,6 @@ class UploadCommand extends FlickrCliCommand
         $recursive = $input->getOption('recursive');
         $dryrun = $input->getOption('dry-run');
 
-        //$metadata = new Metadata($config['flickr']['consumer_key'], $config['flickr']['consumer_secret']);
-        //$metadata->setOauthAccess($config['flickr']['token'], $config['flickr']['token_secret']);
-
-        //$guzzleAdapter = new RezzzaGuzzleAdapter();
         $guzzleAdapterVerbose = new RezzzaGuzzleAdapter();
         $guzzleAdapterClient = $guzzleAdapterVerbose->getClient();
         $guzzleAdapterClientConfig = $guzzleAdapterClient->getConfig();
@@ -248,7 +244,6 @@ class UploadCommand extends FlickrCliCommand
                 $dirRelativePath = $fileRelativePath->getPath();
 
                 $uploadFileSize = filesize($filePath);
-                //$uploadFileSizeLen = strlen(number_format($uploadFileSize));
                 $uploadFileSizeFormatted = $bytesize->format($uploadFileSize);
 
                 $uploadDirPath = '';

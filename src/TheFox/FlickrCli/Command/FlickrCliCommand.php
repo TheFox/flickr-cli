@@ -221,10 +221,7 @@ abstract class FlickrCliCommand extends Command
                 $logLevel = Logger::WARNING;
         }
 
-        //$logFormatter = new LineFormatter("[%datetime%] %level_name%: %message%\n");
-
         $handler = new StreamHandler('php://stdout', $logLevel);
-        //$handler->setFormatter($logFormatter);
         $this->logger->pushHandler($handler);
     }
 

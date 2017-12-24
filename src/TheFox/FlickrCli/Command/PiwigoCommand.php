@@ -55,7 +55,6 @@ class PiwigoCommand extends FlickrCliCommand
      *
      * @param InputInterface $input An InputInterface instance
      * @param OutputInterface $output An OutputInterface instance
-     *
      * @return int
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
