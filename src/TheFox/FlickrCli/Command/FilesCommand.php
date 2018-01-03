@@ -10,12 +10,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class FilesCommand extends FlickrCliCommand
 {
-    /**
-     * @deprecated
-     * @var int
-     */
-    public $exit = 0;
-
     protected function configure()
     {
         $this->setName('files');

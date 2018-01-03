@@ -11,50 +11,23 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Yaml;
-use Rezzza\Flickr\Metadata;
 use Rezzza\Flickr\ApiFactory;
-use Rezzza\Flickr\Http\GuzzleAdapter as RezzzaGuzzleAdapter;
 use Guzzle\Http\Client as GuzzleHttpClient;
 use Guzzle\Stream\PhpStreamRequestFactory;
-use Monolog\Logger;
 use Rych\ByteSize\ByteSize;
 use TheFox\FlickrCli\FlickrCli;
 
 class DownloadCommand extends FlickrCliCommand
 {
     /**
-     * @deprecated
-     * @var int
-     */
-    private $OLDExit;
-
-    /**
      * @var string The destination directory for downloaded files. No trailing slash.
      */
-    protected $destinationPath;
-
-    /**
-     * @deprecated
-     * @var Logger General logger.
-     */
-    protected $logger;
-
-    /**
-     * @deprecated
-     * @var Logger Log for information about failed downloads.
-     */
-    protected $loggerFilesFailed;
+    private $destinationPath;
 
     /**
      * @var bool Whether to download even if a local copy already exists.
      */
-    protected $forceDownload;
-
-    /**
-     * @deprecated
-     * @var
-     */
-    private $fs;
+    private $forceDownload;
 
     protected function configure()
     {
@@ -75,20 +48,6 @@ class DownloadCommand extends FlickrCliCommand
         $this->addArgument('photosets', InputArgument::IS_ARRAY, 'Photosets to download.');
 
         $this->destinationPath = 'photosets';
-    }
-
-    private function setupDestination()
-    {
-        $filesystem = new Filesystem();
-
-        // Destination directory. Default to 'photosets'.
-        $customDestDir = $this->getInput()->getOption('destination');
-        if (!empty($customDestDir)) {
-            $this->destinationPath = rtrim($customDestDir, '/');
-        }
-        if (!$filesystem->exists($this->destinationPath)) {
-            $filesystem->mkdir($this->destinationPath, 0755);
-        }
     }
 
     /**
@@ -117,6 +76,20 @@ class DownloadCommand extends FlickrCliCommand
         }
 
         return $exit;
+    }
+
+    private function setupDestination()
+    {
+        $filesystem = new Filesystem();
+
+        // Destination directory. Default to 'photosets'.
+        $customDestDir = $this->getInput()->getOption('destination');
+        if (!empty($customDestDir)) {
+            $this->destinationPath = rtrim($customDestDir, '/');
+        }
+        if (!$filesystem->exists($this->destinationPath)) {
+            $filesystem->mkdir($this->destinationPath, 0755);
+        }
     }
 
     /**
