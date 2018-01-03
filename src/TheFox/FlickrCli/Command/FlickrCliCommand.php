@@ -355,7 +355,7 @@ abstract class FlickrCliCommand extends Command
     /**
      * @param int $signal
      */
-    private function signalHandler(int $signal)
+    public function signalHandler(int $signal)
     {
         $this->exit++;
 
