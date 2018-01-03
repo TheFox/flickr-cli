@@ -19,12 +19,12 @@ use Rezzza\Flickr\Http\GuzzleAdapter as RezzzaGuzzleAdapter;
 use TheFox\OAuth\Common\Http\Client\GuzzleStreamClient;
 use TheFox\OAuth\OAuth1\Service\Flickr;
 
-class AuthCommand extends FlickrCliCommand
+final class AuthCommand extends FlickrCliCommand
 {
     /**
      * @var SymfonyStyle
      */
-    protected $io;
+    private $io;
 
     /**
      * @param null|string $name
@@ -150,7 +150,7 @@ class AuthCommand extends FlickrCliCommand
      * @param string $customerSecret
      * @return array
      */
-    protected function authenticate(string $configPath, string $customerKey, string $customerSecret)
+    private function authenticate(string $configPath, string $customerKey, string $customerSecret)
     {
         $storage = new Memory();
 
@@ -216,7 +216,7 @@ class AuthCommand extends FlickrCliCommand
      *
      * @return string The permission, one of 'read', write', or 'delete'. Defaults to 'read'.
      */
-    protected function getPermissionType(): string
+    private function getPermissionType(): string
     {
         $this->io->writeln('The permission you grant to FlickrCLI depends on what you want to do with it.');
 

@@ -5,7 +5,7 @@ namespace TheFox\FlickrCli\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class AlbumsCommand extends FlickrCliCommand
+final class AlbumsCommand extends FlickrCliCommand
 {
     protected function configure()
     {

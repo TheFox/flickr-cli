@@ -17,7 +17,7 @@ use Guzzle\Stream\PhpStreamRequestFactory;
 use Rych\ByteSize\ByteSize;
 use TheFox\FlickrCli\FlickrCli;
 
-class DownloadCommand extends FlickrCliCommand
+final class DownloadCommand extends FlickrCliCommand
 {
     /**
      * @var string The destination directory for downloaded files. No trailing slash.
@@ -56,6 +56,7 @@ class DownloadCommand extends FlickrCliCommand
      * @param InputInterface $input An InputInterface instance
      * @param OutputInterface $output An OutputInterface instance
      * @return int 0 if everything went fine, or an error code.
+     * @throws Exception
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
@@ -96,8 +97,9 @@ class DownloadCommand extends FlickrCliCommand
      * Download photos to directories named after the album (i.e. photoset, in the original parlance).
      *
      * @return int
+     * @throws Exception
      */
-    protected function downloadByAlbumTitle(): int
+    private function downloadByAlbumTitle(): int
     {
         $this->getLogger()->info(sprintf('Downloading to Album-based directories in: %s', $this->destinationPath));
 

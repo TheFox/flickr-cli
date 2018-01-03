@@ -8,7 +8,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class DeleteCommand extends FlickrCliCommand
+final class DeleteCommand extends FlickrCliCommand
 {
     protected function configure()
     {

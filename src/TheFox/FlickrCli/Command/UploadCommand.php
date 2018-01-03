@@ -17,7 +17,7 @@ use Guzzle\Http\Client as GuzzleHttpClient;
 use Rych\ByteSize\ByteSize;
 use TheFox\FlickrCli\FlickrCli;
 
-class UploadCommand extends FlickrCliCommand
+final class UploadCommand extends FlickrCliCommand
 {
     protected function configure()
     {

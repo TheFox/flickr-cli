@@ -10,14 +10,14 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class PiwigoCommand extends FlickrCliCommand
+final class PiwigoCommand extends FlickrCliCommand
 {
     /**
      * Array of photoset titles, keyed by their ID.
      *
      * @var string[]
      */
-    protected $photosets;
+    private $photosets;
 
     /**
      * @var Connection
@@ -99,6 +99,9 @@ class PiwigoCommand extends FlickrCliCommand
         }
     }
 
+    /**
+     * @throws \Doctrine\DBAL\DBALException
+     */
     private function setupPiwigoConnection()
     {
         $config = $this->getConfig();
@@ -119,9 +122,9 @@ class PiwigoCommand extends FlickrCliCommand
     /**
      * @param $image
      * @param $piwigoUploadsPath
-     * @throws RuntimeException
+     * @throws \Doctrine\DBAL\DBALException
      */
-    protected function processOne($image, $piwigoUploadsPath)
+    private function processOne($image, $piwigoUploadsPath)
     {
         // Check file.
         $filePath = $piwigoUploadsPath . substr($image['path'], 9);
@@ -234,7 +237,7 @@ class PiwigoCommand extends FlickrCliCommand
      * @param int $primaryPhotoId
      * @return int
      */
-    protected function getPhotosetId($photosetName, $primaryPhotoId)
+    private function getPhotosetId($photosetName, $primaryPhotoId)
     {
         $apiFactory = $this->getApiService()->getApiFactory();
 
