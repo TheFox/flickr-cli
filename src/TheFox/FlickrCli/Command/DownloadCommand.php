@@ -62,6 +62,18 @@ final class DownloadCommand extends FlickrCliCommand
     {
         parent::execute($input, $output);
 
+        //$i = 0;
+        //while (++$i < 10) {
+        //    printf("run %d %d\n", $i, $this->getExit());
+        //    sleep(1);
+        //
+        //    if ($this->getExit()) {
+        //        printf("exit\n");
+        //        break;
+        //    }
+        //}
+        //return $this->getExit();
+
         $this->setupDestination();
 
         // Force download?

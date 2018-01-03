@@ -342,14 +342,17 @@ abstract class FlickrCliCommand extends Command
             throw new SignalException('pcntl_signal function not found. You need to install pcntl PHP extention.');
         }
 
+        //printf("signalHandlerSetup\n");
         declare(ticks=1);
 
+        /** @uses FlickrCliCommand::signalHandler() */
         pcntl_signal(SIGTERM, [$this, 'signalHandler']);
-        /** @uses $this::signalHandler() */
+
+        /** @uses FlickrCliCommand::signalHandler() */
         pcntl_signal(SIGINT, [$this, 'signalHandler']);
-        /** @uses $this::signalHandler() */
+
+        /** @uses FlickrCliCommand::signalHandler() */
         pcntl_signal(SIGHUP, [$this, 'signalHandler']);
-        /** @uses $this::signalHandler() */
     }
 
     /**
@@ -358,6 +361,8 @@ abstract class FlickrCliCommand extends Command
     public function signalHandler(int $signal)
     {
         $this->exit++;
+
+        //printf("signal %d\n", $signal);
 
         if ($this->exit >= 2) {
             throw new SignalException(sprintf('Signal %d', $signal));
