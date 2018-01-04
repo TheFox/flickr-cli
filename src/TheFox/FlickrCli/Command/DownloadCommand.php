@@ -62,18 +62,6 @@ final class DownloadCommand extends FlickrCliCommand
     {
         parent::execute($input, $output);
 
-        //$i = 0;
-        //while (++$i < 10) {
-        //    printf("run %d %d\n", $i, $this->getExit());
-        //    sleep(1);
-        //
-        //    if ($this->getExit()) {
-        //        printf("exit\n");
-        //        break;
-        //    }
-        //}
-        //return $this->getExit();
-
         $this->setupDestination();
 
         // Force download?
@@ -171,7 +159,7 @@ final class DownloadCommand extends FlickrCliCommand
         }
 
         $filesystem = new Filesystem();
-        $totalDownloaded = 0;
+        $totalBytesDownloaded = 0;
         $totalFiles = 0;
 
         /** @var $photoset SimpleXMLElement */
@@ -203,7 +191,7 @@ final class DownloadCommand extends FlickrCliCommand
             $xmlPhotoListPagesTotal = (int)$xmlPhotoList->photoset->attributes()->pages;
             // $xmlPhotoListPhotosTotal = (int)$xmlPhotoList->photoset->attributes()->total;
 
-            $fileCount = 0;
+            $photosetFileCount = 0;
 
             for ($page = 1; $page <= $xmlPhotoListPagesTotal; $page++) {
                 pcntl_signal_dispatch();
@@ -228,24 +216,25 @@ final class DownloadCommand extends FlickrCliCommand
                         break;
                     }
 
-                    $this->getLogger()->debug(sprintf('[media] %d/%d photo %s', $page, $fileCount, $photo['id']));
+                    $this->getLogger()->debug(sprintf('[media] %d/%d photo %s', $page, $photosetFileCount, $photo['id']));
                     $downloaded = $this->downloadPhoto($photo, $destinationPath);
                     if ($downloaded && isset($downloaded->filesize)) {
-                        $totalDownloaded += $downloaded->filesize;
+                        $totalBytesDownloaded += $downloaded->filesize;
                     }
-                    $fileCount++;
+                    ++$photosetFileCount;
+                    ++$totalFiles;
                 }
             }
         }
 
-        if ($totalDownloaded > 0) {
+        if ($totalBytesDownloaded > 0) {
             $bytesize = new ByteSize();
-            $totalDownloadedMsg = $bytesize->format($totalDownloaded);
+            $totalDownloadedMsg = $bytesize->format($totalBytesDownloaded);
         } else {
             $totalDownloadedMsg = 0;
         }
 
-        $this->getLogger()->info(sprintf('[main] total downloaded: %d', $totalDownloadedMsg));
+        $this->getLogger()->info(sprintf('[main] total downloaded: %s (%d)', $totalDownloadedMsg, $totalBytesDownloaded));
         $this->getLogger()->info(sprintf('[main] total files:      %d', $totalFiles));
         $this->getLogger()->info('[main] exit');
 
@@ -381,7 +370,7 @@ final class DownloadCommand extends FlickrCliCommand
         }
         while (!$stream->feof()) {
             pcntl_signal_dispatch();
-            if ($this->getExit()) {
+            if ($this->getExit() >= 2) {
                 break;
             }
 
@@ -434,18 +423,26 @@ final class DownloadCommand extends FlickrCliCommand
         fclose($fh);
         print "\n";
 
+        // Inform the user about the signal.
+        if ($this->getExit()) {
+            $this->getLogger()->info(sprintf('Catched a Signal while downloading. [%d]', $this->getExit()));
+        }
+
+        if (!$filesystem->exists($filePathTmp)) {
+            $this->getLogger()->error(sprintf('[%s] %s FAILED: temp file does not exist: %s', $media, $id, $filePathTmp));
+            return false;
+        }
+
         $fileTmpSize = filesize($filePathTmp);
 
-        if ($this->getExit()) {
-            $filesystem->remove($filePathTmp);
-        } elseif (($size && $fileTmpSize != $size) || $fileTmpSize <= 1024) {
+        if (($size && $fileTmpSize != $size) || $fileTmpSize <= 1024) {
             $filesystem->remove($filePathTmp);
 
             $this->getLogger()->error(sprintf('[%s] %s FAILED: temp file size wrong: %d', $media, $id, $fileTmpSize));
         } else {
             // Rename to its final destination, and return the photo metadata.
             $filesystem->rename($filePathTmp, $filePath, $this->forceDownload);
-            $xmlPhoto->photo->filesize = $size;
+            $xmlPhoto->photo->filesize = $fileTmpSize;
 
             /** @var SimpleXMLElement $photo */
             $photo = $xmlPhoto->photo;
@@ -468,12 +465,22 @@ final class DownloadCommand extends FlickrCliCommand
         // 1. Download any photos not in a set.
         $notInSetPage = 1;
         do {
+            pcntl_signal_dispatch();
+            if ($this->getExit()) {
+                break;
+            }
+
             $notInSet = $apiFactory->call('flickr.photos.getNotInSet', ['page' => $notInSetPage]);
             $pages = (int)$notInSet->photos['pages'];
             $this->getLogger()->info(sprintf('Not in set p%s/%d', $notInSetPage, $pages));
 
             $notInSetPage++;
             foreach ($notInSet->photos->photo as $photo) {
+                pcntl_signal_dispatch();
+                if ($this->getExit()) {
+                    break;
+                }
+
                 $this->downloadPhotoById($photo);
             }
         } while ($notInSetPage <= $notInSet->photos['pages']);
@@ -481,14 +488,29 @@ final class DownloadCommand extends FlickrCliCommand
         // 2. Download all photos in all sets.
         $setsPage = 1;
         do {
+            pcntl_signal_dispatch();
+            if ($this->getExit()) {
+                break;
+            }
+
             $sets = $apiFactory->call('flickr.photosets.getList', ['page' => $setsPage]);
             $pages = (int)$sets->photosets['pages'];
             $this->getLogger()->info(sprintf('Sets p%d/%d', $setsPage, $pages));
 
             foreach ($sets->photosets->photoset as $set) {
+                pcntl_signal_dispatch();
+                if ($this->getExit()) {
+                    break;
+                }
+
                 // Loop through all pages in this set.
                 $setPhotosPage = 1;
                 do {
+                    pcntl_signal_dispatch();
+                    if ($this->getExit()) {
+                        break;
+                    }
+
                     $params = [
                         'photoset_id' => $set['id'],
                         'page' => $setPhotosPage,
@@ -508,6 +530,11 @@ final class DownloadCommand extends FlickrCliCommand
                     ))
                     ;
                     foreach ($setPhotos->photoset->photo as $photo) {
+                        pcntl_signal_dispatch();
+                        if ($this->getExit()) {
+                            break;
+                        }
+
                         $this->downloadPhotoById($photo);
                     }
                     $setPhotosPage++;

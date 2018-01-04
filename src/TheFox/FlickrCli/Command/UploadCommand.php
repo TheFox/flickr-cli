@@ -230,6 +230,11 @@ final class UploadCommand extends FlickrCliCommand
 
         $directories = $input->getArgument('directory');
         foreach ($directories as $argDir) {
+            pcntl_signal_dispatch();
+            if ($this->getExit()) {
+                break;
+            }
+
             if ($configUploadedBaseDir) {
                 $argDirReplaced = str_replace('/', '_', $argDir);
                 $uploadBaseDirPath = sprintf('%s/%s', $configUploadedBaseDir, $argDirReplaced);
@@ -332,6 +337,11 @@ final class UploadCommand extends FlickrCliCommand
 
                 if ($photosetsNew) {
                     foreach ($photosetsNew as $photosetTitle) {
+                        pcntl_signal_dispatch();
+                        if ($this->getExit()) {
+                            break;
+                        }
+
                         $this->getLogger()->info(sprintf('[photoset] create %s ... ', $photosetTitle));
 
                         $xml = null;
@@ -367,6 +377,11 @@ final class UploadCommand extends FlickrCliCommand
 
                     $logLine = [];
                     foreach ($photosets as $photosetId) {
+                        pcntl_signal_dispatch();
+                        if ($this->getExit()) {
+                            break;
+                        }
+
                         $logLine[] = substr($photosetId, -5);
 
                         try {

@@ -95,6 +95,11 @@ abstract class FlickrCliCommand extends Command
         $this->exit = $exit;
     }
 
+    public function incExit(int $inc = 1)
+    {
+        $this->exit += $inc;
+    }
+
     /**
      * @return LoggerInterface
      */
@@ -342,31 +347,36 @@ abstract class FlickrCliCommand extends Command
             throw new SignalException('pcntl_signal function not found. You need to install pcntl PHP extention.');
         }
 
-        //printf("signalHandlerSetup\n");
+        //printf("signalHandlerSetup FlickrCliCommand\n");
         declare(ticks=1);
 
-        /** @uses FlickrCliCommand::signalHandler() */
-        pcntl_signal(SIGTERM, [$this, 'signalHandler']);
+        $signalFn = $this->getSignalHandlerFunction();
 
-        /** @uses FlickrCliCommand::signalHandler() */
-        pcntl_signal(SIGINT, [$this, 'signalHandler']);
-
-        /** @uses FlickrCliCommand::signalHandler() */
-        pcntl_signal(SIGHUP, [$this, 'signalHandler']);
+        pcntl_signal(SIGTERM, $signalFn);
+        pcntl_signal(SIGINT, $signalFn);
+        pcntl_signal(SIGHUP, $signalFn);
     }
 
-    /**
-     * @param int $signal
-     */
-    public function signalHandler(int $signal)
+    public function getSignalHandlerFunction()
     {
-        $this->exit++;
+        //printf("getSignalHandlerFunction FlickrCliCommand\n");
+        /**
+         * @param int $signal
+         */
+        $fn = function (int $signal) {
+            $this->incExit();
+            
+            $msg=sprintf('Signal %d %d', $signal, $this->exit);
 
-        //printf("signal %d\n", $signal);
+            //printf("\nsignal2 FlickrCliCommand %d %d\n", $signal, $this->exit);
+            $this->logger->info($msg);
 
-        if ($this->exit >= 2) {
-            throw new SignalException(sprintf('Signal %d', $signal));
-        }
+            if ($this->exit >= 2) {
+                throw new SignalException($msg);
+            }
+        };
+
+        return $fn;
     }
 
     /**

@@ -106,8 +106,8 @@ final class AuthCommand extends FlickrCliCommand
             $config = $this->loadConfig();
         }
 
-        $consumerKey=$config['flickr']['consumer_key'];
-        $consumerSecret=$config['flickr']['consumer_secret'];
+        $consumerKey = $config['flickr']['consumer_key'];
+        $consumerSecret = $config['flickr']['consumer_secret'];
 
         $hasToken = isset($config['flickr']['token']) && isset($config['flickr']['token_secret']);
         $hasForceOpt = $this->getInput()->hasOption('force') && $this->getInput()->getOption('force');
