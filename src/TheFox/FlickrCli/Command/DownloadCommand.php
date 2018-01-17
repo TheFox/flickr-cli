@@ -17,7 +17,7 @@ use Guzzle\Stream\PhpStreamRequestFactory;
 use Rych\ByteSize\ByteSize;
 use TheFox\FlickrCli\FlickrCli;
 
-final class DownloadCommand extends FlickrCliCommand
+class DownloadCommand extends FlickrCliCommand
 {
     /**
      * @var string The destination directory for downloaded files. No trailing slash.
@@ -246,12 +246,13 @@ final class DownloadCommand extends FlickrCliCommand
      * additional 'filesize' property will be set on the return element.
      *
      * @param SimpleXMLElement $photo
-     * @param string $destinationPath
+     * @param string $destinationPath The full filesystem path to the directory into which to download the photo. Must
+     * already exist.
      * @param string $basename The filename to save the downloaded file to (without extension).
      * @return SimpleXMLElement|boolean Photo metadata as returned by Flickr, or false if something went wrong.
      * @throws Exception
      */
-    private function downloadPhoto(SimpleXMLElement $photo, string $destinationPath, string $basename = null)
+    protected function downloadPhoto(SimpleXMLElement $photo, string $destinationPath, string $basename = null)
     {
         $id = (string)$photo->attributes()->id;
 

@@ -20,6 +20,7 @@ if (isset($autoloader)) {
 
 use Symfony\Component\Console\Application;
 
+use TheFox\FlickrCli\Command\ChecksumsCommand;
 use TheFox\FlickrCli\Command\PiwigoCommand;
 use TheFox\FlickrCli\FlickrCli;
 use TheFox\FlickrCli\Command\AlbumsCommand;
@@ -32,6 +33,7 @@ use TheFox\FlickrCli\Command\UploadCommand;
 $application = new Application(FlickrCli::NAME, FlickrCli::VERSION);
 $application->add(new AlbumsCommand());
 $application->add(new AuthCommand());
+$application->add(new ChecksumsCommand());
 $application->add(new DeleteCommand());
 $application->add(new DownloadCommand());
 $application->add(new FilesCommand());
