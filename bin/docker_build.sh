@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Builds the Docker images.
+# Builds the Docker image.
 
 DATE=$(date +"%Y%m%d_%H%M%S")
 SCRIPT_BASEDIR=$(dirname "$0")
@@ -8,7 +8,6 @@ SCRIPT_BASEDIR=$(dirname "$0")
 
 set -e
 which docker &> /dev/null || { echo 'ERROR: docker not found in PATH'; exit 1; }
-which sed &> /dev/null || { echo 'ERROR: sed not found in PATH'; exit 1; }
 
 cd "${SCRIPT_BASEDIR}/.."
 source ./.env
