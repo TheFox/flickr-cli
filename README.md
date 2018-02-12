@@ -51,32 +51,24 @@ are required in order to prevent a single directory from containing too many sub
 
 ## Usage of the Docker Image
 
-### Setup
+The Docker installation is required - see the Installation details for your operating system.
+Once you have the Docker installed follow the steps...
 
-To use this software within Docker follow this steps.
+### Linux
 
-1. Create a volume. This is used to store the configuration file for the `auth` step.
+* Get the access token and store it in the `config.yml` in your `$HOME/.flickr-cli` directory:
 
-        docker volume create flickrcli
+```bash
+CONFIG_FILE_DIRECTORY="$HOME/.flickr-cli"
+test -d $CONFIG_FILE_DIRECTORY || mkdir "$CONFIG_FILE_DIRECTORY"
+docker run --rm -it -u $(id -u):$(id -g) -v "$PWD":/mnt -v "$CONFIG_FILE_DIRECTORY":/data thefox21/flickr-cli auth
+```
 
-2. Get the access token (it will create `config.yml` file in the volume).
+* Upload directory `directory_with_pictures` (located in current directory) full of JPEGs to Flickr:
 
-        docker run --rm -it -u $(id -u):$(id -g) -v "$PWD":/mnt -v flickrcli:/data thefox21/flickr-cli auth
-
-   or you can store the `config.yml` in your `$HOME/.flickr-cli` directory and use:
-
-        mkdir $HOME/.flickr-cli
-        docker run --rm -it -u $(id -u):$(id -g) -v "$PWD":/mnt -v "$HOME/.flickr-cli":/data thefox21/flickr-cli auth
-
-### Usage
-
-Upload directory `2017.06.01-Spindleruv_mlyn` full of JPEGs to Flickr:
-
-    docker run --rm -it -u $(id -u):$(id -g) -v "$PWD":/mnt -v flickrcli:/data thefox21/flickr-cli upload --config=/data/config.yml --tags "2017.06.01 Spindleruv_mlyn" --sets "2017.06.01-Spindleruv_mlyn" 2017.06.01-Spindleruv_mlyn
-
-For Docker image troubleshooting you can use:
-
-    docker run --rm -it -u $(id -u):$(id -g) -v "$PWD":/mnt -v flickrcli:/data --entrypoint=/bin/bash thefox21/flickr-cli
+```bash
+  docker run --rm -it -u $(id -u):$(id -g) -v "$PWD":/mnt:ro -v "$CONFIG_FILE_DIRECTORY":/data thefox21/flickr-cli upload --config=/data/config.yml --tags "my_tags" --sets "my_set" directory_with_pictures
+```
 
 ### Paths
 
