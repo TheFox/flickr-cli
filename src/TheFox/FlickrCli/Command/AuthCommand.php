@@ -223,7 +223,7 @@ final class AuthCommand extends FlickrCliCommand
         $question = 'Please select from the following three options';
         $choices = [
             'read' => 'download photos',
-            'write' => 'upload photos',
+            'write' => 'upload or edit photos or their metadata',
             'delete' => 'download and/or delete photos from Flickr',
         ];
 
