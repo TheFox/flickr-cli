@@ -234,6 +234,7 @@ class UploadCommand extends FlickrCliCommand
 
             /** @var \Symfony\Component\Finder\SplFileInfo[] $files */
             $files = iterator_to_array($finder->in($argDir));
+            sort($files);
             foreach ($files as $file) {
                 pcntl_signal_dispatch();
                 if ($this->getExit()) {
