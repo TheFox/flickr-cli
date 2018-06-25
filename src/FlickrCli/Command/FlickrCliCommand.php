@@ -180,8 +180,8 @@ abstract class FlickrCliCommand extends Command
     {
         $desc = "Path of the config file.\n"
             . "Can also be set with the FLICKRCLI_CONFIG environment variable.\n"
-            . "Will default to current directory: " . $this->getConfigFilePath();
-        $this->addOption('config', 'c', InputOption::VALUE_OPTIONAL, $desc);
+            . "Will default to current directory.";
+        $this->addOption('config', 'c', InputOption::VALUE_OPTIONAL, $desc, $this->configFilePath);
     }
 
     /**
