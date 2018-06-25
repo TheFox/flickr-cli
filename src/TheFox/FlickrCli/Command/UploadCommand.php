@@ -298,6 +298,10 @@ class UploadCommand extends FlickrCliCommand
                     $photoId = isset($xml->photoid) ? (int)$xml->photoid : 0;
                     $stat = isset($xml->attributes()->stat) ? strtolower((string)$xml->attributes()->stat) : '';
                     $successful = $stat == 'ok' && $photoId != 0;
+                    if (!$successful) {
+                        $this->getLogger()->error(sprintf('[file] error %s: %s (%s)',
+                            $xml->err['code'], $xml->err['msg'], $fileName ));
+                    }
                 } else {
                     $photoId = 0;
                     $successful = false;
