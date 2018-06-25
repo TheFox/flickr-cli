@@ -21,21 +21,21 @@
     "require": {
         "php": "^7.0",
         "rezzza/flickr": "^1.1",
-        "symfony/yaml": "^2.3",
-        "symfony/console": "^3.1",
-        "symfony/filesystem": "^3.1",
-        "symfony/finder": "^3.1",
-        "monolog/monolog": "^1.21",
+        "symfony/yaml": "^4.1",
+        "symfony/console": "^4.1",
+        "symfony/filesystem": "^4.1",
+        "symfony/finder": "^4.1",
+        "monolog/monolog": "^1.23",
         "guzzlehttp/guzzle": "^3.8",
-        "lusitanian/oauth": "^0.2",
+        "lusitanian/oauth": "^0.8",
         "rych/bytesize": "^1.0",
-        "doctrine/dbal": "^2.5",
+        "doctrine/dbal": "^2.7",
         "doctrine/annotations": "<1.5",
         "doctrine/cache": "<1.7"
     },
     "require-dev": {
-        "phpstan/phpstan": "^0.7",
-        "squizlabs/php_codesniffer": "^3.0"
+        "phpstan/phpstan": "^0.10",
+        "squizlabs/php_codesniffer": "^3.3"
     },
     "autoload": {
         "psr-4": {
