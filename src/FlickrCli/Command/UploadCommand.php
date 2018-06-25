@@ -315,21 +315,22 @@ final class UploadCommand extends FlickrCliCommand
                 }
 
                 if ($successful) {
-                    $logLine = 'OK';
+                    $this->getLogger()->info(sprintf('[file] status: OK - ID %s', $photoId));
+                    
                     $totalFilesUploaded++;
 
                     if ($uploadDirPath) {
-                        $this->getLogger()->info(sprintf('[file] move to uploaded dir: %s', $uploadDirPath));
-
                         $filesystem = new Filesystem();
                         $filesystem->rename($filePath, sprintf('%s/%s', $uploadDirPath, $fileName));
+                        
+                        $this->getLogger()->info(sprintf('[file] moved to uploaded dir: %s', $uploadDirPath));
                     }
                 } else {
-                    $logLine = 'FAILED';
+                    $this->getLogger()->error(sprintf('[file] status: FAILED - ID %s', $photoId));
+                    
                     $fileErrors++;
                     $filesFailed[] = $fileRelativePathStr;
                 }
-                $this->getLogger()->info(sprintf('[file] status: %s - ID %s', $logLine, $photoId));
 
                 if (!$successful) {
                     continue;
