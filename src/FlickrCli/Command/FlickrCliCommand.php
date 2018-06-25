@@ -266,7 +266,7 @@ abstract class FlickrCliCommand extends Command
         $this->getLogger()->debug(sprintf('Load configuration: %s', $this->getConfigFilePath()));
 
         /** @var string[][] $config */
-        $config = Yaml::parse($configFilePath);
+        $config = Yaml::parse(file_get_contents($configFilePath));
 
         if (!isset($config)
             || !isset($config['flickr'])

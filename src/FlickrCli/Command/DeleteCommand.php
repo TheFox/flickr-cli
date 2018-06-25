@@ -82,7 +82,13 @@ final class DeleteCommand extends FlickrCliCommand
                     $fileCount++;
                     $id = (string)$photo->attributes()->id;
                     try {
-                        $apiFactory->call('flickr.photos.delete', ['photo_id' => $id]);
+                        /** @var SimpleXMLElement $deleteResponse */
+                        $deleteResponse = $apiFactory->call('flickr.photos.delete', ['photo_id' => $id]);
+                        $statElement = $deleteResponse->attributes()->stat;
+                        $statStr = (string)$statElement;
+                        if ('ok' !== $statStr) {
+                            throw new \RuntimeException(sprintf('stat: %s', $statStr));
+                        }
                         $this->getLogger()->info(sprintf('[photo] %d/%d deleted %s', $page, $fileCount, $id));
                     } catch (Exception $e) {
                         $msg = sprintf(
