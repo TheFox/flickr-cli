@@ -117,8 +117,8 @@ final class AuthCommand extends FlickrCliCommand
             $config['flickr']['token'] = $newConfig['token'];
             $config['flickr']['token_secret'] = $newConfig['token_secret'];
 
-            $this->io->success(sprintf('Saving config to %s', $configFilePath));
             $this->saveConfig($config);
+            $this->io->success(sprintf('Saving config to %s', $configFilePath));
         }
 
         // Now test the stored credentials.

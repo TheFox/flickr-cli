@@ -266,7 +266,7 @@ abstract class FlickrCliCommand extends Command
         $this->getLogger()->debug(sprintf('Load configuration: %s', $this->getConfigFilePath()));
 
         /** @var string[][] $config */
-        $config = Yaml::parse($configFilePath);
+        $config = Yaml::parse(file_get_contents($configFilePath));
 
         if (!isset($config)
             || !isset($config['flickr'])
@@ -315,23 +315,27 @@ abstract class FlickrCliCommand extends Command
             return false;
         }
 
-        $consumerKey = $config['flickr']['consumer_key'];
-        if (!$consumerKey) {
+        if (isset($config['flickr']['consumer_key']) && $config['flickr']['consumer_key']) {
+            $consumerKey = $config['flickr']['consumer_key'];
+        } else {
             return false;
         }
 
-        $consumerSecret = $config['flickr']['consumer_secret'];
-        if (!$consumerSecret) {
+        if (isset($config['flickr']['consumer_secret']) && $config['flickr']['consumer_secret']) {
+            $consumerSecret = $config['flickr']['consumer_secret'];
+        } else {
             return false;
         }
 
-        $token = $config['flickr']['token'];
-        if (!$token) {
+        if (isset($config['flickr']['token']) && $config['flickr']['token']) {
+            $token = $config['flickr']['token'];
+        } else {
             return false;
         }
 
-        $tokenSecret = $config['flickr']['token_secret'];
-        if (!$tokenSecret) {
+        if (isset($config['flickr']['token_secret']) && $config['flickr']['token_secret']) {
+            $tokenSecret = $config['flickr']['token_secret'];
+        } else {
             return false;
         }
 
@@ -365,8 +369,8 @@ abstract class FlickrCliCommand extends Command
          */
         $fn = function (int $signal) {
             $this->incExit();
-            
-            $msg=sprintf('Signal %d %d', $signal, $this->exit);
+
+            $msg = sprintf('Signal %d %d', $signal, $this->exit);
 
             //printf("\nsignal2 FlickrCliCommand %d %d\n", $signal, $this->exit);
             $this->logger->info($msg);
