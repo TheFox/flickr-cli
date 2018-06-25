@@ -173,7 +173,7 @@ abstract class FlickrCliCommand extends Command
     protected function configure()
     {
         $this
-            ->addOption('config', 'c', InputOption::VALUE_OPTIONAL, 'Path to config file. Default: ./config.yml')//->addOption('log', 'l', InputOption::VALUE_OPTIONAL, 'Path to log directory. Default: ./log')
+            ->addOption('config', 'c', InputOption::VALUE_OPTIONAL, 'Path to config file', './config.yml')//->addOption('log', 'l', InputOption::VALUE_OPTIONAL, 'Path to log directory. Default: ./log')
         ;
     }
 
