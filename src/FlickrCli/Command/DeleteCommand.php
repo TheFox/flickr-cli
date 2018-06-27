@@ -98,7 +98,7 @@ final class DeleteCommand extends FlickrCliCommand
                             $id,
                             $e->getMessage()
                         );
-                        $this->getLogger()->info($msg);
+                        $this->getLogger()->error($msg);
                     }
                 }
             }
