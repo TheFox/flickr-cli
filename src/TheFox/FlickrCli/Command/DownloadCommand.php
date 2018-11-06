@@ -234,15 +234,19 @@ class DownloadCommand extends FlickrCliCommand
                     ]);
                 }
 
-                /** @var $photo SimpleXMLElement */
+				/** @var $photo SimpleXMLElement */
+				$total_photos = count($xmlPhotoList->photoset->photo);
+				$current_photo = 0;
                 foreach ($xmlPhotoList->photoset->photo as $photo) {
+					$current_photo++;
                     pcntl_signal_dispatch();
                     if ($this->getExit()) {
                         break;
                     }
 
-                    $this->getLogger()->debug(sprintf('[media] %d/%d photo %s', $page, $fileCount, $photo['id']));
-                    $downloaded = $this->downloadPhoto($photo, $destinationPath);
+					$this->getLogger()->debug(sprintf('[media] %d/%d photo %s', $page, $fileCount, $photo['id']));
+					$debug_info = " $current_photo/$total_photos at the page $page/$xmlPhotoListPagesTotal - photo set: $photosetTitle";
+                    $downloaded = $this->downloadPhoto($photo, $destinationPath, null, $debug_info);
                     if ($downloaded && isset($downloaded->filesize)) {
                         $totalDownloaded += $downloaded->filesize;
                     }
@@ -275,7 +279,7 @@ class DownloadCommand extends FlickrCliCommand
      * @return SimpleXMLElement|boolean Photo metadata as returned by Flickr, or false if something went wrong.
      * @throws Exception
      */
-    private function downloadPhoto(SimpleXMLElement $photo, string $destinationPath, string $basename = null)
+    private function downloadPhoto(SimpleXMLElement $photo, string $destinationPath, string $basename = null, string $debug_info)
     {
         $id = (string)$photo->attributes()->id;
 
@@ -416,8 +420,9 @@ class DownloadCommand extends FlickrCliCommand
         }
 
         $this->getLogger()->info(sprintf(
-            "[%s] %s, farm %s, server %s, %s, '%s', %s",
-            $media,
+			"[%s%s] %s, farm %s, server %s, %s, '%s', %s",
+			$media,
+			$debug_info,
             $id,
             $farm,
             $server,
@@ -485,7 +490,7 @@ class DownloadCommand extends FlickrCliCommand
                 );
             } else {
                 // Otherwise, just show the amount downloaded and speed.
-                printf("[file] %s %10s\x1b[0K\r", number_format($downloaded), $downloadedDiffStr);
+                printf("[file - $debug_info] %s %10s\x1b[0K\r", number_format($downloaded), $downloadedDiffStr);
             }
         }
         fclose($fh);
@@ -505,7 +510,13 @@ class DownloadCommand extends FlickrCliCommand
             $xmlPhoto->photo->filesize = $size;
 
             /** @var SimpleXMLElement $photo */
-            $photo = $xmlPhoto->photo;
+			$photo = $xmlPhoto->photo;
+			
+			// update the timstamps of the file
+			$update_date = (int) $photo->dates['lastupdate'];
+			$taken_date = strtotime((string) $photo->dates['taken']);
+			touch($filePath, $taken_date, $update_date);
+			// var_dump($taken_date); exit;
 
             return $photo;
         }
