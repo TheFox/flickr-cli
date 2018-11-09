@@ -281,8 +281,8 @@ class DownloadCommand extends FlickrCliCommand
      * @throws Exception
      */
     private function downloadPhoto(
-        SimpleXMLElement $photo, 
-        string $destinationPath, 
+        SimpleXMLElement $photo,
+        string $destinationPath,
         string $basename = null,
         string $debugInfo
     ) {
@@ -603,11 +603,11 @@ class DownloadCommand extends FlickrCliCommand
         $idHash = md5($id);
         $destinationPath = sprintf(
             '%s/%s/%s/%s/%s/%s', 
-            $this->destinationPath, 
-            $idHash[0], 
-            $idHash[1], 
-            $idHash[2], 
-            $idHash[3], 
+            $this->destinationPath,
+            $idHash[0],
+            $idHash[1],
+            $idHash[2],
+            $idHash[3],
             $id
         );
 
