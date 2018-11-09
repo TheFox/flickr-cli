@@ -280,9 +280,12 @@ class DownloadCommand extends FlickrCliCommand
      * @return SimpleXMLElement|boolean Photo metadata as returned by Flickr, or false if something went wrong.
      * @throws Exception
      */
-    private function downloadPhoto(SimpleXMLElement $photo, string $destinationPath, string $basename = null,
-        string $debugInfo)
-    {
+    private function downloadPhoto(
+        SimpleXMLElement $photo, 
+        string $destinationPath, 
+        string $basename = null,
+        string $debugInfo
+    ) {
         $id = (string)$photo->attributes()->id;
 
         $apiFactory = $this->getApiService()->getApiFactory();
@@ -598,8 +601,15 @@ class DownloadCommand extends FlickrCliCommand
     {
         $id = $photo['id'];
         $idHash = md5($id);
-        $destinationPath = sprintf('%s/%s/%s/%s/%s/%s', $this->destinationPath, $idHash[0], $idHash[1], 
-            $idHash[2], $idHash[3], $id);
+        $destinationPath = sprintf(
+            '%s/%s/%s/%s/%s/%s', 
+            $this->destinationPath, 
+            $idHash[0], 
+            $idHash[1], 
+            $idHash[2], 
+            $idHash[3], 
+            $id
+        );
 
         $filesystem = new Filesystem();
         if (!$filesystem->exists($destinationPath)) {
