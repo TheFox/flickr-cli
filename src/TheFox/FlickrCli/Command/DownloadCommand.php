@@ -618,7 +618,7 @@ class DownloadCommand extends FlickrCliCommand
 
         // Save the actual file.
         $apiFactory = $this->getApiService()->getApiFactory();
-        $photo = $this->downloadPhoto($photo, $destinationPath, $id);
+        $photo = $this->downloadPhoto($photo, $destinationPath, $id, "");
         if (false === $photo) {
             $this->getLogger()->error(sprintf('Unable to get metadata about photo: %s', $id));
             return;
