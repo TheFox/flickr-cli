@@ -602,7 +602,7 @@ class DownloadCommand extends FlickrCliCommand
         $id = $photo['id'];
         $idHash = md5($id);
         $destinationPath = sprintf(
-            '%s/%s/%s/%s/%s/%s', 
+            '%s/%s/%s/%s/%s/%s',
             $this->destinationPath,
             $idHash[0],
             $idHash[1],
