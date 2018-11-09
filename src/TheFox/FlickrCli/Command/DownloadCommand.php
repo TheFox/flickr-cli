@@ -235,14 +235,19 @@ class DownloadCommand extends FlickrCliCommand
                 }
 
                 /** @var $photo SimpleXMLElement */
+                $totalPhotos = count($xmlPhotoList->photoset->photo);
+                $currentPhoto = 0;
                 foreach ($xmlPhotoList->photoset->photo as $photo) {
+                    $currentPhoto++;
                     pcntl_signal_dispatch();
                     if ($this->getExit()) {
                         break;
                     }
 
                     $this->getLogger()->debug(sprintf('[media] %d/%d photo %s', $page, $fileCount, $photo['id']));
-                    $downloaded = $this->downloadPhoto($photo, $destinationPath);
+                    $debugInfo = " $currentPhoto/$totalPhotos at the page $page/$xmlPhotoListPagesTotal "
+                        . "- photo set: $photosetTitle";
+                    $downloaded = $this->downloadPhoto($photo, $destinationPath, null, $debugInfo);
                     if ($downloaded && isset($downloaded->filesize)) {
                         $totalDownloaded += $downloaded->filesize;
                     }
@@ -275,8 +280,12 @@ class DownloadCommand extends FlickrCliCommand
      * @return SimpleXMLElement|boolean Photo metadata as returned by Flickr, or false if something went wrong.
      * @throws Exception
      */
-    private function downloadPhoto(SimpleXMLElement $photo, string $destinationPath, string $basename = null)
-    {
+    private function downloadPhoto(
+        SimpleXMLElement $photo,
+        string $destinationPath,
+        string $basename = null,
+        string $debugInfo
+    ) {
         $id = (string)$photo->attributes()->id;
 
         $apiFactory = $this->getApiService()->getApiFactory();
@@ -416,8 +425,9 @@ class DownloadCommand extends FlickrCliCommand
         }
 
         $this->getLogger()->info(sprintf(
-            "[%s] %s, farm %s, server %s, %s, '%s', %s",
+            "[%s%s] %s, farm %s, server %s, %s, '%s', %s",
             $media,
+            $debugInfo,
             $id,
             $farm,
             $server,
@@ -485,7 +495,7 @@ class DownloadCommand extends FlickrCliCommand
                 );
             } else {
                 // Otherwise, just show the amount downloaded and speed.
-                printf("[file] %s %10s\x1b[0K\r", number_format($downloaded), $downloadedDiffStr);
+                printf("[file$debugInfo] %s %10s\x1b[0K\r", number_format($downloaded), $downloadedDiffStr);
             }
         }
         fclose($fh);
@@ -506,6 +516,12 @@ class DownloadCommand extends FlickrCliCommand
 
             /** @var SimpleXMLElement $photo */
             $photo = $xmlPhoto->photo;
+            
+            // update the timstamps of the file
+            $update_date = (int) $photo->dates['lastupdate'];
+            $taken_date = strtotime((string) $photo->dates['taken']);
+            touch($filePath, $taken_date, $update_date);
+            // var_dump($taken_date); exit;
 
             return $photo;
         }
@@ -585,7 +601,15 @@ class DownloadCommand extends FlickrCliCommand
     {
         $id = $photo['id'];
         $idHash = md5($id);
-        $destinationPath = sprintf('%s/%s/%s/%s/%s/%s', $this->destinationPath, $idHash[0], $idHash[1], $idHash[2], $idHash[3], $id);
+        $destinationPath = sprintf(
+            '%s/%s/%s/%s/%s/%s',
+            $this->destinationPath,
+            $idHash[0],
+            $idHash[1],
+            $idHash[2],
+            $idHash[3],
+            $id
+        );
 
         $filesystem = new Filesystem();
         if (!$filesystem->exists($destinationPath)) {
@@ -594,7 +618,7 @@ class DownloadCommand extends FlickrCliCommand
 
         // Save the actual file.
         $apiFactory = $this->getApiService()->getApiFactory();
-        $photo = $this->downloadPhoto($photo, $destinationPath, $id);
+        $photo = $this->downloadPhoto($photo, $destinationPath, $id, "");
         if (false === $photo) {
             $this->getLogger()->error(sprintf('Unable to get metadata about photo: %s', $id));
             return;
