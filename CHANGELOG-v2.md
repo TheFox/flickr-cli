@@ -1,5 +1,11 @@
 # Release Notes for FlickrCLI v2.x
 
+## Unreleased changes for v2.1.0
+
+- Documentation
+- Clean up
+- Bugfixes: #32 #33
+
 ## v2.0.3
 
 - Global installation bugfix. [2]
