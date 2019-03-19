@@ -7,7 +7,7 @@ A command-line interface to [Flickr](https://www.flickr.com/). Upload and downlo
 The project outlines as described in my blog post about [Open Source Software Collaboration](https://blog.fox21.at/2019/02/21/open-source-software-collaboration.html).
 
 - The main purpose of this software is to provide a command-line interface for Flickr.
-- The features should not go beyond Flickrs features and functions. So the features are limited to those of Flickr.
+- The features should not go beyond Flickrs features and functions. So the features of this software are limited to those of Flickr.
 - This list is open. Feel free to request features.
 
 ## Installation
