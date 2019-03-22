@@ -24,5 +24,3 @@
 - Clean up + Refactoring #27
 - Make installable as a global Composer package #23
 - Use `--verbose` standard CLI option, and hide debugging output by default #22
-
-## v2.0.0-rc.1

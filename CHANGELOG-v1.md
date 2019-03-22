@@ -10,5 +10,3 @@
 - PSR1/PSR2
 - Moved Make targets to Bash scripts.
 - PHP7 only.
-
-## v1.0.0
