@@ -1,7 +1,7 @@
 {
     "name": "thefox/flickr-cli",
     "description": "Upload and download Flickr photos, photo sets, directories via shell.",
-    "license": "GPL-3.0",
+    "license": "MIT",
     "type": "project",
     "keywords": [
         "Flickr",

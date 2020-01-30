@@ -1,10 +1,12 @@
 # Release Notes for FlickrCLI v2.x
 
-## Unreleased changes for v2.1.0
+## v2.1.0 [unreleased]
 
 - Documentation
 - Clean up
 - Bugfixes: #32 #33
+- MIT License
+- Remove Travis CI support.
 
 ## v2.0.3
 
