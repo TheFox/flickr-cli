@@ -26,7 +26,7 @@
         "symfony/filesystem": "^3.1",
         "symfony/finder": "^3.1",
         "monolog/monolog": "^1.21",
-        "guzzlehttp/guzzle": "^3.8",
+        "guzzlehttp/guzzle": "^6.5",
         "lusitanian/oauth": "^0.2",
         "rych/bytesize": "^1.0",
         "doctrine/dbal": "^2.5"
